@@ -5,17 +5,17 @@ import java.time.Instant
 sealed trait ArticleOp[T]
 
 case class CreateArticle(
-  user:        String,
+  authorId:    Long,
   title:       String,
   description: Option[String],
   createdAt:   Instant
 ) extends ArticleOp[Article]
 
 case class FetchArticles(
-  user:   Option[String],
-  q:      Option[String],
-  offset: Int,
-  limit:  Int
+  authorId: Option[Long],
+  q:        Option[String],
+  offset:   Int,
+  limit:    Int
 ) extends ArticleOp[Articles]
 
-case class GetArticle(id: Long) extends ArticleOp[Article]
+case class GetArticleById(id: Long) extends ArticleOp[Article]

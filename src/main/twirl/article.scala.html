@@ -1,4 +1,4 @@
-@(article: mono.article.Article)
+@(article: mono.article.Article, author: mono.author.Author)
 
 <html>
     <head>
@@ -9,6 +9,8 @@
             <h1>@{article.title}</h1>
 
             <time>@{article.createdAt}</time>
+
+            <b>@{author.title}</b>
 
             @for(d <- article.description) {
                 <p>@d</p>

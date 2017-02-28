@@ -16,10 +16,13 @@ object ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
       articles.put(a.id, a)
       Task.now(a.asInstanceOf[A])
 
-    case FetchArticles(user, q, offset, limit) ⇒
-      Task.now(Articles(articles.slice(offset, offset + limit).values.toList, articles.size).asInstanceOf[A])
+    case FetchArticles(authorId, q, offset, limit) ⇒
+      Task.now(Articles(articles.filter{
+        case (_, a) ⇒
+          authorId.fold(true)(_ == a.authorId)
+      }.slice(offset, offset + limit).values.toList, articles.size).asInstanceOf[A])
 
-    case GetArticle(i) ⇒
+    case GetArticleById(i) ⇒
       Task.now(articles(i).asInstanceOf[A])
   }
 }

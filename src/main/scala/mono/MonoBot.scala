@@ -8,7 +8,7 @@ import cats.free.Free
 import cats.~>
 import info.mukel.telegrambot4s.api.TelegramBot
 import info.mukel.telegrambot4s.methods.{ GetUpdates, ParseMode, SendMessage }
-import info.mukel.telegrambot4s.models.Update
+import info.mukel.telegrambot4s.models.{ ForceReply, Update }
 import monix.eval.Task
 import mono.bot._
 
@@ -73,7 +73,21 @@ class MonoBot(
             None,
             None
           )
-        )).map(_ ⇒ ()).asInstanceOf[Task[A]]
+        )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
+
+      case Reply(text, meta, forceReply) ⇒
+        Task.fromFuture(request(
+          SendMessage(
+            Left(meta.chat.id),
+            text,
+            Some(ParseMode.Markdown),
+            None,
+            None,
+            Some(meta.messageId),
+            if (forceReply) Some(ForceReply(forceReply = true, selective = Some(true)))
+            else None
+          )
+        )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
     }
   }
 

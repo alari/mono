@@ -7,10 +7,11 @@ import akka.stream.Materializer
 import cats.~>
 import monix.eval.Task
 import mono.article.ArticleOps
+import mono.author.AuthorOps
 
 import scala.language.higherKinds
 
-class WebApp[F[_]](interpreter: F ~> Task)(implicit A: ArticleOps[F]) {
+class WebApp[F[_]](interpreter: F ~> Task)(implicit A: ArticleOps[F], Au: AuthorOps[F]) {
 
   val route: Route =
     new WebArticle[F](interpreter).route

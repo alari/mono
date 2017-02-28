@@ -21,7 +21,7 @@ object BotProcessor extends MonixToCatsConversions {
         .withDefault(_ ⇒ Future.successful(BotState.Idle))
 
       (i) ⇒ {
-        state(i.chatId) = state(i.chatId).flatMap(s ⇒
+        state(i.meta.chat.id) = state(i.meta.chat.id).flatMap(s ⇒
           script(s, i).foldMap(interpreter).runAsync)
         Nil
       }

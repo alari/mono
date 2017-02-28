@@ -1,3 +1,0 @@
-package mono
-
-trait Result

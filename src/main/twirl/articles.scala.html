@@ -1,4 +1,4 @@
-@(articles: mono.article.Articles)
+@(articles: mono.article.Articles, authors: Map[Long, mono.author.Author])
 
 <html>
     <head>
@@ -10,6 +10,10 @@
         @for(a <- articles.values) {
             <article>
                 <a href="/@{a.id}">@{a.title}</a>
+                @for(author <- authors.get(a.authorId)) {
+                    <br />
+                    <b>@{author.title}</b>
+                }
             </article>
         }
 

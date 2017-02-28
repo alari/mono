@@ -9,23 +9,23 @@ import scala.language.higherKinds
 class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {
 
   def create(
-    user:        String,
+    authorId:    Long,
     title:       String,
     description: Option[String],
     createdAt:   Instant
   ): Free[F, Article] =
-    inject[ArticleOp, F](CreateArticle(user, title, description, createdAt))
+    inject[ArticleOp, F](CreateArticle(authorId, title, description, createdAt))
 
   def fetch(
-    user:   Option[String],
-    q:      Option[String],
-    offset: Int,
-    limit:  Int
+    authorId: Option[Long],
+    q:        Option[String],
+    offset:   Int,
+    limit:    Int
   ): Free[F, Articles] =
-    inject[ArticleOp, F](FetchArticles(user, q, offset, limit))
+    inject[ArticleOp, F](FetchArticles(authorId, q, offset, limit))
 
-  def get(id: Long): Free[F, Article] =
-    inject[ArticleOp, F](GetArticle(id))
+  def getById(id: Long): Free[F, Article] =
+    inject[ArticleOp, F](GetArticleById(id))
 }
 
 object ArticleOps {

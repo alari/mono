@@ -4,25 +4,36 @@ import java.time.Instant
 
 import cats.data.Coproduct
 import cats.free.Free
+import mono.Interpret
+import mono.alias.{ Alias, AliasOp, AliasOps }
 import mono.article.{ ArticleOp, ArticleOps }
+import mono.author.{ AuthorOp, AuthorOps }
 
-class BotScript()(implicit B: BotOps[BotScript.Op], A: ArticleOps[BotScript.Op]) {
+class BotScript()(implicit
+  B: BotOps[BotScript.Op],
+                  A:  ArticleOps[BotScript.Op],
+                  Au: AuthorOps[BotScript.Op],
+                  Ao: AliasOps[BotScript.Op]) {
 
   import BotScript.Scenario
+  import BotScript.Op
   import BotState._
 
-  private val newTitleR = "/new (.+)".r
+  private val newTitleR = "/new(@[^ ]+)? (.+)".r
 
   val createArticle: Scenario = {
-    case (Idle, Plain(newTitleR(title), chatId)) ⇒
+    case (Idle, Plain(newTitleR(_, title), m)) ⇒
       for {
-        _ ← B.say("Give Me Description", chatId)
+        _ ← B.reply("Give Me Description", m, forceReply = true)
       } yield CreateArticleWaitDescription(title)
 
-    case (CreateArticleWaitDescription(title), Plain(text, chatId)) ⇒
+    case (CreateArticleWaitDescription(title), Plain(text, m)) ⇒
       for {
-        a ← A.create("user", title, Some(text).map(_.trim).filter(_.nonEmpty), Instant.now())
-        _ ← B.say("Created: " + a, chatId)
+        au ← Au.ensureTelegram(m.chat.id, m.chat.title.getOrElse("??? " + m.chat.id))
+        _ ← m.chat.alias.fold(Free.pure[Op, Option[Alias]](None))(alias ⇒ Ao.tryPointAuthorTo(alias, au.id))
+        a ← A.create(au.id, title, Some(text).map(_.trim).filter(_.nonEmpty), Instant.now())
+        al ← Ao.tryPointArticleTo(a.title, a.id)
+        _ ← B.reply(s"Created: $a (alias: $al)", m)
       } yield Idle
   }
 
@@ -30,8 +41,8 @@ class BotScript()(implicit B: BotOps[BotScript.Op], A: ArticleOps[BotScript.Op])
     case (Idle, m) ⇒
       for {
         a ← A.fetch(None, None, 0, 1)
-        _ ← B.say("Fetched: " + a, m.chatId)
-        _ ← if (a.count > 1) B.say("we have more", m.chatId) else B.say("That's all", m.chatId)
+        _ ← B.say("Fetched: " + a, m.meta)
+        _ ← if (a.count > 1) B.say("we have more", m.meta) else B.say("That's all", m.meta)
       } yield if (a.count > 1)
         Fetching(0, 1, a.count)
       else Idle
@@ -39,8 +50,8 @@ class BotScript()(implicit B: BotOps[BotScript.Op], A: ArticleOps[BotScript.Op])
     case (Fetching(o, l, _), m) ⇒
       for {
         a ← A.fetch(None, None, o + l, l)
-        _ ← B.say("Fetched: " + a, m.chatId)
-        _ ← if (a.count > o + l + l) B.say(s"we have more", m.chatId) else B.say("That's all", m.chatId)
+        _ ← B.say("Fetched: " + a, m.meta.chat.id)
+        _ ← if (a.count > o + l + l) B.say(s"we have more", m.meta) else B.say("That's all", m.meta)
       } yield if (a.count > o + l + l)
         Fetching(o + l, l, a.count)
       else Idle
@@ -51,13 +62,18 @@ class BotScript()(implicit B: BotOps[BotScript.Op], A: ArticleOps[BotScript.Op])
 }
 
 object BotScript {
-  type Op[A] = Coproduct[BotOp, ArticleOp, A]
+
+  type Op[A] = Coproduct[BotOp, Interpret.Op, A]
   type Scenario = PartialFunction[(BotState, Incoming), Free[Op, BotState]]
 
-  def apply()(implicit B: BotOps[BotScript.Op], A: ArticleOps[BotScript.Op]): (BotState, Incoming) ⇒ Free[Op, BotState] =
+  def apply()(implicit
+    B: BotOps[BotScript.Op],
+              A:  ArticleOps[BotScript.Op],
+              Au: AuthorOps[BotScript.Op],
+              Ao: AliasOps[BotScript.Op]): (BotState, Incoming) ⇒ Free[Op, BotState] =
     (state, in) ⇒
       new BotScript().scenario.applyOrElse((state, in), (sm: (BotState, Incoming)) ⇒ for {
-        _ ← B.say(s"Unknown command: `$in`", sm._2.chatId)
+        _ ← B.reply(s"Unknown command", sm._2.meta)
       } yield state)
 
 }

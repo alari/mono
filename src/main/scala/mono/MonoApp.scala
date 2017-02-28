@@ -1,19 +1,15 @@
 package mono
 
-import java.time.Instant
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import cats.~>
-import monix.eval.Task
 import monix.cats.MonixToCatsConversions
-import mono.article._
+import monix.eval.Task
+import mono.bot.Incoming.{ Chat, Meta }
 import mono.bot._
 import mono.web.WebApp
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import scala.io.StdIn
 import scala.language.higherKinds
 
@@ -59,32 +55,25 @@ object MonoApp extends App with MonixToCatsConversions {
 
   // теперь пора сделать слой хттп
 
-  import monix.execution.Scheduler.Implicits.global
-
-  var state: BotState = BotState.Idle
-
-  val i: BotScript.Op ~> Task = BotConsoleInterpreter or ArticlesInMemoryInterpreter
-
-  for (n ← 1 to 10) {
-    ArticleOps.ops[BotScript.Op]
-      .create("test user " + n, "title#" + n, None, Instant.now()).foldMap(i)
-  }
+  val interpret: Interpret.Op ~> Task = Interpret.inMemory
 
   implicit val system = ActorSystem("mono")
-  implicit val mat = ActorMaterializer ()
+  implicit val mat = ActorMaterializer()
 
   val bot = new MonoBot(
     script = BotScript(),
-    interpreter = _ or ArticlesInMemoryInterpreter
+    interpreter = _ or interpret
   )
 
-  val web = new WebApp[ArticleOp](ArticlesInMemoryInterpreter)
+  val web = new WebApp[Interpret.Op](interpret)
 
   bot.run()
 
   web.run()
 
-  Source.repeat(()).map(_ ⇒ Plain(StdIn.readLine(), 0l)).runWith(BotProcessor(BotScript(), i))
+  Source.repeat(())
+    .map(_ ⇒ Plain(StdIn.readLine(), Meta(0l, Chat(0l, Some(System.getProperty("user.name")), Some(System.getProperty("user.name"))))))
+    .runWith(BotProcessor(BotScript(), BotConsoleInterpreter or interpret))
 
 }
 

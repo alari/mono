@@ -32,7 +32,9 @@ val circeV = "0.7.0"
 val doobieV = "0.4.1"
 
 val logback = "ch.qos.logback" % "logback-classic" % "1.1.7"
+val shapeless = "com.chuusai" %% "shapeless" % "2.3.2"
 val scalatest = "org.scalatest" %% "scalatest" % "3.0.1" % Test
+val icu =  "com.ibm.icu" % "icu4j" % "58.2"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % akkaHttpV,
@@ -43,6 +45,8 @@ libraryDependencies ++= Seq(
   "io.monix" %% "monix-cats" % monixV,
   "org.tpolecat" %% "doobie-core-cats" % doobieV,
   "org.tpolecat" %% "doobie-postgres-cats" % doobieV,
+  icu,
+  shapeless,
   logback,
   scalatest
 )
