@@ -1,0 +1,17 @@
+@(articles: mono.article.Articles)
+
+<html>
+    <head>
+        <title>Articles</title>
+    </head>
+    <body>
+        <h1>Articles (@{articles.count})</h1>
+
+        @for(a <- articles.values) {
+            <article>
+                <a href="/@{a.id}">@{a.title}</a>
+            </article>
+        }
+
+    </body>
+</html>

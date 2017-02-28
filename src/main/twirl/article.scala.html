@@ -1,0 +1,18 @@
+@(article: mono.article.Article)
+
+<html>
+    <head>
+        <title>@{article.title}</title>
+    </head>
+    <body>
+        <article>
+            <h1>@{article.title}</h1>
+
+            <time>@{article.createdAt}</time>
+
+            @for(d <- article.description) {
+                <p>@d</p>
+            }
+        </article>
+    </body>
+</html>
