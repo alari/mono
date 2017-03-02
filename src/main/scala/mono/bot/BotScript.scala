@@ -5,9 +5,9 @@ import java.time.Instant
 import cats.data.Coproduct
 import cats.free.Free
 import mono.Interpret
-import mono.alias.{ Alias, AliasOp, AliasOps }
-import mono.article.{ ArticleOp, ArticleOps }
-import mono.author.{ AuthorOp, AuthorOps }
+import mono.alias.{ Alias, AliasOps }
+import mono.article.ArticleOps
+import mono.author.AuthorOps
 
 class BotScript()(implicit
   B: BotOps[BotScript.Op],
@@ -15,8 +15,7 @@ class BotScript()(implicit
                   Au: AuthorOps[BotScript.Op],
                   Ao: AliasOps[BotScript.Op]) {
 
-  import BotScript.Scenario
-  import BotScript.Op
+  import BotScript.{ Op, Scenario }
   import BotState._
 
   private val newTitleR = "/new(@[^ ]+)? (.+)".r
