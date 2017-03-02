@@ -13,8 +13,8 @@ object Interpret {
 
   type Op[A] = Coproduct[AliasOp, Op0, A]
 
-  lazy val inMemory: Op ~> Task = {
-    val i0: Op0 ~> Task = ArticlesInMemoryInterpreter or AuthorsInMemoryInterpreter
-    AliasInMemoryInterpreter or i0
+  def inMemory: Op ~> Task = {
+    val i0: Op0 ~> Task = new ArticlesInMemoryInterpreter or new AuthorsInMemoryInterpreter
+    new AliasInMemoryInterpreter or i0
   }
 }

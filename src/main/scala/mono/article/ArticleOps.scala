@@ -9,12 +9,11 @@ import scala.language.higherKinds
 class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {
 
   def create(
-    authorId:    Long,
-    title:       String,
-    description: Option[String],
-    createdAt:   Instant
+    authorId:  Long,
+    title:     String,
+    createdAt: Instant
   ): Free[F, Article] =
-    inject[ArticleOp, F](CreateArticle(authorId, title, description, createdAt))
+    inject[ArticleOp, F](CreateArticle(authorId, title, createdAt))
 
   def fetch(
     authorId: Option[Long],
@@ -26,6 +25,25 @@ class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {
 
   def getById(id: Long): Free[F, Article] =
     inject[ArticleOp, F](GetArticleById(id))
+
+  def fetchDrafts(
+    authorId: Long,
+    offset:   Int,
+    limit:    Int
+  ): Free[F, Articles] =
+    inject[ArticleOp, F](FetchDrafts(authorId, offset, limit))
+
+  def publishDraft(id: Long): Free[F, Article] =
+    inject[ArticleOp, F](PublishDraft(id))
+
+  def draftArticle(id: Long): Free[F, Article] =
+    inject[ArticleOp, F](DraftArticle(id))
+
+  def getText(id: Long): Free[F, String] =
+    inject[ArticleOp, F](GetText(id))
+
+  def setText(id: Long, text: String): Free[F, String] =
+    inject[ArticleOp, F](SetText(id, text))
 }
 
 object ArticleOps {

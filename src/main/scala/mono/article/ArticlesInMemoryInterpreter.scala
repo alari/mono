@@ -1,28 +1,69 @@
 package mono.article
 
+import java.util.concurrent.atomic.AtomicLong
+
 import cats.~>
 import monix.eval.Task
 
-import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
 
-object ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
-  private val articles = mutable.TreeMap[Long, Article]()
-  private var id: Long = 0
+class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
+  private val articles = TrieMap.empty[Long, Article]
+  private val texts = TrieMap.empty[Long, String]
 
-  override def apply[A](fa: ArticleOp[A]): Task[A] = fa match {
-    case CreateArticle(user, title, description, createdAt) ⇒
-      id = id + 1
-      val a = Article(id, user, title, description, createdAt)
+  private def drafts(id: Long): List[Article] =
+    articles.values.filter(a ⇒ a.authorId == id && a.draft).toList
+
+  private def pubs: List[Article] =
+    articles.values.filterNot(_.draft).toList
+
+  private val id = new AtomicLong(0)
+
+  override def apply[A](fa: ArticleOp[A]): Task[A] = (fa match {
+    case CreateArticle(user, title, createdAt) ⇒
+      val a = Article(id.getAndIncrement(), user, title, None, createdAt, draft = true)
       articles.put(a.id, a)
-      Task.now(a.asInstanceOf[A])
+      Task.now(a)
 
     case FetchArticles(authorId, q, offset, limit) ⇒
-      Task.now(Articles(articles.filter{
-        case (_, a) ⇒
-          authorId.fold(true)(_ == a.authorId)
-      }.slice(offset, offset + limit).values.toList, articles.size).asInstanceOf[A])
+      val filtered = pubs.filter(a ⇒
+        authorId.fold(true)(_ == a.authorId))
+      Task.now(Articles(filtered.slice(offset, offset + limit), filtered.size))
 
     case GetArticleById(i) ⇒
-      Task.now(articles(i).asInstanceOf[A])
-  }
+      articles.get(i) match {
+        case Some(a) ⇒ Task.now(a)
+        case None    ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
+      }
+
+    case FetchDrafts(authorId, offset, limit) ⇒
+      val ds = drafts(authorId)
+      Task.now(Articles(ds.slice(offset, offset + limit), ds.size))
+
+    case PublishDraft(i) ⇒
+      articles.get(i) match {
+        case Some(a) ⇒
+          val aa = a.copy(draft = false)
+          articles(i) = aa
+          Task.now(aa)
+        case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
+      }
+
+    case DraftArticle(i) ⇒
+      articles.get(i) match {
+        case Some(a) ⇒
+          val aa = a.copy(draft = true)
+          articles(i) = aa
+          Task.now(aa)
+        case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
+      }
+
+    case GetText(i) ⇒
+      Task.now(texts.getOrElse(i, ""))
+
+    case SetText(i, t) ⇒
+      texts(i) = t
+      Task.now(t)
+
+  }).map(_.asInstanceOf[A])
 }

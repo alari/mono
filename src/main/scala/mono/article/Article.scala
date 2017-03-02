@@ -9,7 +9,9 @@ case class Article(
   title:       String,
   description: Option[String],
 
-  createdAt: Instant
+  createdAt: Instant,
+
+  draft: Boolean
 )
 
 case class Articles(values: List[Article], count: Int)

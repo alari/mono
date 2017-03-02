@@ -72,7 +72,7 @@ object MonoApp extends App with MonixToCatsConversions {
   web.run()
 
   Source.repeat(())
-    .map(_ ⇒ Plain(StdIn.readLine(), Meta(0l, Chat(0l, Some(System.getProperty("user.name")), Some(System.getProperty("user.name"))))))
+    .map(_ ⇒ Incoming.console(StdIn.readLine()))
     .runWith(BotProcessor(BotScript(), BotConsoleInterpreter or interpret))
 
 }

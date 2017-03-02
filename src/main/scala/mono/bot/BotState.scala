@@ -6,8 +6,10 @@ object BotState {
 
   case object Idle extends BotState
 
-  case class Fetching(offset: Int, limit: Int, total: Int) extends BotState
+  case object InitNewArticle extends BotState
 
-  case class CreateArticleWaitDescription(title: String) extends BotState
+  case class ArticleContext(id: Long, op: Option[String] = None) extends BotState
+
+  case class FetchingArticles(offset: Int, limit: Int, total: Int) extends BotState
 
 }

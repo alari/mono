@@ -7,7 +7,7 @@ import monix.eval.Task
 
 import scala.collection.concurrent.TrieMap
 
-object AuthorsInMemoryInterpreter extends (AuthorOp ~> Task) {
+class AuthorsInMemoryInterpreter extends (AuthorOp ~> Task) {
   private val stateById = TrieMap.empty[Long, Author]
 
   override def apply[A](fa: AuthorOp[A]): Task[A] = fa match {
