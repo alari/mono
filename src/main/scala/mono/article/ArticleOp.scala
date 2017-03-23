@@ -32,3 +32,7 @@ case class GetArticleById(id: Long) extends ArticleOp[Article]
 case class GetText(id: Long) extends ArticleOp[String]
 
 case class SetText(id: Long, text: String) extends ArticleOp[String]
+
+case class SetTitle(id: Long, text: String) extends ArticleOp[Article]
+
+case class SetDescription(id: Long, text: Option[String]) extends ArticleOp[Article]

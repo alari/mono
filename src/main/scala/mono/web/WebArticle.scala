@@ -27,8 +27,9 @@ class WebArticle[F[_]](interpreter: F ~> Task)(implicit A: ArticleOps[F], Au: Au
     run(
       for {
         article ← A.getById(articleId)
+        text ← A.getText(articleId)
         author ← Au.getById(article.authorId)
-      } yield html.article(article, author)
+      } yield html.article(article, text, author)
     )
 
   } ~ parameters('offset.as[Int] ? 0, 'limit.as[Int] ? 10, 'authorId.as[Long].?, 'q.?) { (o, l, a, q) ⇒

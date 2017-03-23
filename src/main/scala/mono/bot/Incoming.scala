@@ -10,6 +10,8 @@ case class Plain(text: String, meta: Incoming.Meta) extends Incoming
 
 case class Command(name: String, tail: Option[String], meta: Incoming.Meta) extends Incoming
 
+case class File(id: String, mimeType: Option[String], name: Option[String], size: Option[Int], meta: Incoming.Meta) extends Incoming
+
 case class Unknown(meta: Incoming.Meta) extends Incoming
 
 object Incoming {
@@ -22,27 +24,38 @@ object Incoming {
 
   case class Meta(
     messageId: Long,
-    chat:      Chat
+    chat:      Chat,
+    isUpdate:  Boolean
   )
 
   private val commandR = "/([a-zA-Z]+)(@[^ ]+)?( .+)?".r
 
-  def telegram(msg: Message): Incoming = {
+  def telegram(msg: Message, isUpdate: Boolean = false): Incoming = {
     val c = Chat(msg.chat.id, msg.chat.username, msg.chat.title.orElse(msg.chat.firstName))
-    val m = Meta(msg.messageId, c)
+    val m = Meta(msg.messageId, c, isUpdate)
 
     msg.text match {
       case Some(text) ⇒
         console(text, m)
 
       case _ ⇒
-        Unknown(m)
+        msg.document match {
+          case Some(doc) ⇒
+            File(doc.fileId, doc.mimeType, doc.fileName, doc.fileSize, m)
+
+          case None ⇒
+            Unknown(m)
+        }
     }
   }
 
   def console(
-    in:   String,
-    meta: Incoming.Meta = Meta(0l, Chat(0l, Some(System.getProperty("user.name")), Some(System.getProperty("user.name"))))
+    in: String,
+    meta: Incoming.Meta = Meta(
+      0l,
+      Chat(0l, Some(System.getProperty("user.name")), Some(System.getProperty("user.name"))),
+      isUpdate = false
+    )
   ): Incoming =
     in.trim match {
       case commandR(name, _, rest) ⇒

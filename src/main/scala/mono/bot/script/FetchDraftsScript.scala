@@ -14,7 +14,11 @@ class FetchDraftsScript(implicit
     case (state, Command("drafts", _, m)) ⇒
       for {
         drafts ← A.fetchDrafts(m.chat.id, 0, 100)
-        _ ← B.reply(drafts.values.map(a ⇒ s"/draft${a.id} ${a.title}").mkString("\n"), m)
+
+        reply = if (drafts.values.isEmpty) "Нет черновиков. Создайте с /new"
+        else drafts.values.map(a ⇒ s"/draft${a.id} ${a.title}").mkString("\n")
+
+        _ ← B.reply(reply, m)
       } yield state
 
     case (state, Command(draftR(id), _, m)) ⇒

@@ -1,14 +1,18 @@
 package mono
 
+import java.nio.file.{ Files, Paths }
+
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{ HttpRequest, Uri }
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ FileIO, Source }
 import cats.free.Free
 import cats.~>
 import info.mukel.telegrambot4s.api.TelegramBot
-import info.mukel.telegrambot4s.methods.{ GetUpdates, ParseMode, SendMessage }
-import info.mukel.telegrambot4s.models.{ ForceReply, Update }
+import info.mukel.telegrambot4s.methods.{ GetFile, GetUpdates, ParseMode, SendMessage }
+import info.mukel.telegrambot4s.models._
 import monix.eval.Task
 import mono.bot._
 
@@ -88,13 +92,47 @@ class MonoBot(
             else None
           )
         )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
+
+      case Choose(text, variants, chatId) ⇒
+        Task.fromFuture(request(
+          SendMessage(
+            Left(chatId),
+            text,
+            Some(ParseMode.Markdown),
+            None,
+            None,
+            None,
+            Some(ReplyKeyboardMarkup(
+              variants.map(_.map(KeyboardButton(_))),
+              oneTimeKeyboard = Some(true)
+            ))
+          )
+        )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
+
+      case LoadFile(fileId) ⇒
+        for {
+          f ← Task.fromFuture(
+            request(GetFile(fileId))
+          )
+          uri = Uri(s"https://api.telegram.org/file/bot$token/${f.filePath.get}")
+          path = Files.createTempFile(fileId, "telegram")
+          fi ← Task.fromFuture(
+            Source
+              .single(HttpRequest(uri = uri))
+              .via(Http().outgoingConnectionHttps("api.telegram.org"))
+              .flatMapConcat(_.entity.dataBytes)
+              .runWith(FileIO.toPath(path))
+          )
+        } yield path
+
     }
   }
 
   override def run(): Unit =
     updatesSrc.collect {
-      case u if u.message.isDefined ⇒ u.message.get
-    }.map(Incoming.telegram).to(BotProcessor(script, interpreter(botOpInt))).run()
+      case u if u.message.isDefined       ⇒ Incoming.telegram(u.message.get)
+      case u if u.editedMessage.isDefined ⇒ Incoming.telegram(u.editedMessage.get, isUpdate = true)
+    }.to(BotProcessor(script, interpreter(botOpInt))).run()
 
   override def shutdown(): Future[_] = Future.successful(())
 }

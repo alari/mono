@@ -16,5 +16,10 @@ object BotConsoleInterpreter extends (BotOp ~> Task) {
     case Reply(text, _, forceReply) ⇒
       println((if (forceReply) Console.RED else Console.YELLOW) + "> " + Console.RESET + text)
       Task.now(mId.getAndIncrement().asInstanceOf[A])
+
+    case Choose(text, variants, _) ⇒
+      println(text)
+      variants.foreach(v ⇒ println("\t" + v.mkString("\t")))
+      Task.now(mId.getAndIncrement().asInstanceOf[A])
   }
 }

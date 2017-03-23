@@ -26,22 +26,23 @@ resolvers ++= Seq(
 )
 
 val monixV = "2.2.2"
-val akkaV = "2.4.17"
-val akkaHttpV = "10.0.3"
+val akkaV = "2.5.0-RC1"
+val akkaHttpV = "10.0.5"
 val circeV = "0.7.0"
 val doobieV = "0.4.1"
 
-val logback = "ch.qos.logback" % "logback-classic" % "1.1.7"
+val logback = "ch.qos.logback" % "logback-classic" % "1.2.2"
 val shapeless = "com.chuusai" %% "shapeless" % "2.3.2"
 val scalatest = "org.scalatest" %% "scalatest" % "3.0.1" % Test
 val icu =  "com.ibm.icu" % "icu4j" % "58.2"
 val akkaStreamTest = "com.typesafe.akka" %% "akka-stream-testkit" % akkaV % Test
+val cats = "org.typelevel" %% "cats" % "0.9.0"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % akkaHttpV,
   "com.typesafe.akka" %% "akka-stream" % akkaV,
   "info.mukel" %% "telegrambot4s" % "2.1.0-SNAPSHOT",
-  "org.typelevel" %% "cats" % "0.9.0"  ,
+  cats,
   "io.monix" %% "monix" % monixV,
   "io.monix" %% "monix-cats" % monixV,
   "org.tpolecat" %% "doobie-core-cats" % doobieV,

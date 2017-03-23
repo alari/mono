@@ -24,15 +24,27 @@ object BotProcessor extends MonixToCatsConversions {
       val state = TrieMap.empty[Long, Task[BotState]]
         .withDefault(_ ⇒ Task.now(BotState.Idle))
 
+      val messages = TrieMap.empty[Long, Task[BotState]]
+
       (i) ⇒ {
         if (log.isDebugEnabled) {
           log.debug(s"state = ${state(i.meta.chat.id)}, i = $i")
         }
 
-        val up = state(i.meta.chat.id).flatMap(s ⇒
+        // TODO: вынести это в какой-то интерфейс
+        val current =
+          if (i.meta.isUpdate && messages.contains(i.meta.messageId)) {
+            messages(i.meta.messageId)
+          } else {
+            val s = state(i.meta.chat.id)
+            messages(i.meta.messageId) = s
+            s
+          }
+
+        val up = current.flatMap(s ⇒
           script(s, i).foldMap(interpreter))
 
-        state(i.meta.chat.id) = up.coeval.runTry match {
+        val ran = up.coeval.runTry match {
           case Success(Left(fut)) ⇒
             Task.fromFuture(fut)
           case Success(Right(v)) ⇒
@@ -41,6 +53,9 @@ object BotProcessor extends MonixToCatsConversions {
             log.warn(s"Performing a chat action failed on $i", f)
             Task.raiseError(f)
         }
+
+        if (!i.meta.isUpdate) state(i.meta.chat.id) = ran
+
         Nil
       }
     }).toMat(Sink.ignore)(Keep.right)

@@ -4,12 +4,40 @@ sealed trait BotState
 
 object BotState {
 
+  /**
+   * Ждём
+   * [[mono.bot.script.FetchArticlesScript.scenario]]
+   * [[mono.bot.script.NewArticleScript.scenario]]
+   * [[mono.bot.script.FetchDraftsScript.scenario]]
+   * [[mono.bot.script.HelpScript.scenario]]
+   */
   case object Idle extends BotState
 
+  /**
+   * Будем создавать статью, для этого нужен заголовок
+   * [[mono.bot.script.NewArticleScript.scenario]]
+   */
   case object InitNewArticle extends BotState
 
-  case class ArticleContext(id: Long, op: Option[String] = None) extends BotState
+  /**
+   * В контексте статьи
+   * [[mono.bot.script.ArticleScript.scenario]]
+   *
+   * @param id айдишник статьи
+   */
+  case class ArticleContext(id: Long) extends BotState
+  case class ArticleTitleContext(id: Long) extends BotState
+  case class ArticleDescriptionContext(id: Long) extends BotState
+  case class ArticleContentContext(id: Long) extends BotState
 
+  /**
+   * В процессе листания опубликованных статей
+   * [[mono.bot.script.FetchArticlesScript.scenario]]
+   *
+   * @param offset offset
+   * @param limit limit
+   * @param total total
+   */
   case class FetchingArticles(offset: Int, limit: Int, total: Int) extends BotState
 
 }

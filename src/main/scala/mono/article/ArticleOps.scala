@@ -44,6 +44,12 @@ class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {
 
   def setText(id: Long, text: String): Free[F, String] =
     inject[ArticleOp, F](SetText(id, text))
+
+  def setTitle(id: Long, text: String): Free[F, Article] =
+    inject[ArticleOp, F](SetTitle(id, text))
+
+  def setDescription(id: Long, text: Option[String]): Free[F, Article] =
+    inject[ArticleOp, F](SetDescription(id, text))
 }
 
 object ArticleOps {
