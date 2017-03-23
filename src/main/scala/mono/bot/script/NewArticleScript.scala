@@ -3,11 +3,11 @@ package mono.bot.script
 import java.time.Instant
 
 import cats.free.Free
-import mono.alias.{Alias, AliasOps}
-import mono.article.{Article, ArticleOps}
+import mono.alias.{ Alias, AliasOps }
+import mono.article.{ Article, ArticleOps }
 import mono.author.AuthorOps
-import mono.bot.BotScript.{Op, Scenario}
-import mono.bot.BotState.{ArticleContext, Idle, InitNewArticle}
+import mono.bot.BotScript.{ Op, Scenario }
+import mono.bot.BotState.{ ArticleContext, Idle, InitNewArticle }
 import mono.bot._
 import ArticleScript.showArticleContext
 

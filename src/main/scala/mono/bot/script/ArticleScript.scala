@@ -5,6 +5,7 @@ import mono.article.{ Article, ArticleOps }
 import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot.BotState.{ ArticleContentContext, ArticleContext, ArticleDescriptionContext, ArticleTitleContext }
 import mono.bot._
+import mono.env.EnvOps
 
 import scala.io.Source
 
@@ -15,7 +16,8 @@ import scala.io.Source
  */
 class ArticleScript(implicit
   B: BotOps[BotScript.Op],
-                    A: ArticleOps[BotScript.Op]) extends Script {
+                    A: ArticleOps[BotScript.Op],
+                    E: EnvOps[BotScript.Op]) extends Script {
   import ArticleScript._
 
   override val scenario: Scenario = {
@@ -36,7 +38,7 @@ class ArticleScript(implicit
 
     case (ArticleContext(id), Plain(`EditTitle`, m)) ⇒
       for {
-        a <- A.getById(id)
+        a ← A.getById(id)
         _ ← B.reply(s"Введите заголовок, сейчас `${a.title}`", m, forceReply = true)
       } yield ArticleTitleContext(id)
 
@@ -49,7 +51,7 @@ class ArticleScript(implicit
 
     case (ArticleContext(id), Plain(`EditDescription`, m)) ⇒
       for {
-        a <- A.getById(id)
+        a ← A.getById(id)
         _ ← B.reply(s"Введите аннотацию\n${a.description.getOrElse("")}", m, forceReply = true)
       } yield ArticleDescriptionContext(id)
 
@@ -115,10 +117,13 @@ object ArticleScript {
       _ ← B.say(s"# ${a.title}\n\n$t", meta)
     } yield ArticleContext(id)
 
-  def showArticleContext(article: Article, meta: Incoming.Meta)(implicit B: BotOps[BotScript.Op]): Free[BotScript.Op, BotState] =
+  def showArticleContext(article: Article, meta: Incoming.Meta)(implicit
+    B: BotOps[BotScript.Op],
+                                                                E: EnvOps[BotScript.Op]): Free[BotScript.Op, BotState] =
     for {
+      host ← E.readHost()
       _ ← B.choose(
-        s"${article.title}\nhttp://localhost:9000/${article.id}",
+        s"${article.title}\n$host/${article.id}",
         ((if (article.draft) Publish else Hide) :: Show :: Nil) ::
           (EditTitle :: EditDescription :: EditContent :: Nil) ::
           Nil,

@@ -13,6 +13,7 @@ import scala.language.higherKinds
 
 class WebApp[F[_]](interpreter: F ~> Task)(implicit A: ArticleOps[F], Au: AuthorOps[F]) {
 
+  // TODO: alias page: either: fetch by user; show article
   val route: Route =
     new WebArticle[F](interpreter).route
 
