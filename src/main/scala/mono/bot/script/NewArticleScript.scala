@@ -15,11 +15,11 @@ class NewArticleScript(implicit
   B: BotOps[BotScript.Op],
                        A:  ArticleOps[BotScript.Op],
                        Au: AuthorOps[BotScript.Op],
-                       Ao: AliasOps[BotScript.Op]) extends Script {
+                       As: AliasOps[BotScript.Op]) extends Script {
   def createArticle(title: String, m: Incoming.Meta): Free[BotScript.Op, Article] =
     for {
       au ← Au.ensureTelegram(m.chat.id, m.chat.title.getOrElse("??? " + m.chat.id))
-      _ ← m.chat.alias.fold(Free.pure[BotScript.Op, Option[Alias]](None))(alias ⇒ Ao.tryPointAuthorTo(alias, au.id))
+      _ ← m.chat.alias.fold(Free.pure[BotScript.Op, Option[Alias]](None))(alias ⇒ As.tryPointTo(alias, au, force = false))
       a ← A.create(au.id, title, Instant.now())
       _ ← showArticleContext(a, m)
     } yield a

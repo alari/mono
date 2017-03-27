@@ -16,7 +16,7 @@ class FetchDraftsScript(implicit
         drafts ← A.fetchDrafts(m.chat.id, 0, 100)
 
         reply = if (drafts.values.isEmpty) "Нет черновиков. Создайте с /new"
-        else drafts.values.map(a ⇒ s"/draft${a.id} ${a.title}").mkString("\n")
+        else drafts.values.map(a ⇒ s"/draft${a.id} **${a.title}**").mkString("\n")
 
         _ ← B.reply(reply, m)
       } yield state
@@ -28,7 +28,7 @@ class FetchDraftsScript(implicit
 
         case _ ⇒
           for {
-            _ ← B.say("Not found", m)
+            _ ← B.say("Черновик не найден", m)
           } yield state
       }
   }

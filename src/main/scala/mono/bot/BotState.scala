@@ -2,6 +2,7 @@ package mono.bot
 
 sealed trait BotState
 
+// TODO: простая сериализация и десериализация
 object BotState {
 
   /**

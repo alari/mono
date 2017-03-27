@@ -28,7 +28,7 @@ object Incoming {
     isUpdate:  Boolean
   )
 
-  private val commandR = "/([a-zA-Z]+)(@[^ ]+)?( .+)?".r
+  private val commandR = "/([a-zA-Z0-9]+)(@[^ ]+)?( .+)?".r
 
   def telegram(msg: Message, isUpdate: Boolean = false): Incoming = {
     val c = Chat(msg.chat.id, msg.chat.username, msg.chat.title.orElse(msg.chat.firstName))

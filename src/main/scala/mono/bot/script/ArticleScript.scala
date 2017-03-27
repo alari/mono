@@ -1,6 +1,7 @@
 package mono.bot.script
 
 import cats.free.Free
+import mono.alias.AliasOps
 import mono.article.{ Article, ArticleOps }
 import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot.BotState.{ ArticleContentContext, ArticleContext, ArticleDescriptionContext, ArticleTitleContext }
@@ -10,20 +11,23 @@ import mono.env.EnvOps
 import scala.io.Source
 
 /**
- *
- * @param B
- * @param A
+ * TODO: загрузка картинки обложки
  */
 class ArticleScript(implicit
   B: BotOps[BotScript.Op],
-                    A: ArticleOps[BotScript.Op],
-                    E: EnvOps[BotScript.Op]) extends Script {
+                    A:  ArticleOps[BotScript.Op],
+                    As: AliasOps[BotScript.Op],
+                    E:  EnvOps[BotScript.Op]) extends Script {
+
   import ArticleScript._
+
+  val showR = "show([0-9]+)".r
 
   override val scenario: Scenario = {
     case (ArticleContext(id), Plain(`Publish`, m)) ⇒
       for {
-        _ ← A.publishDraft(id)
+        a ← A.publishDraft(id)
+        _ ← As.tryPointTo(a.title, a, force = false)
         _ ← B.reply("Опубликован", m)
       } yield ArticleContext(id)
 
@@ -84,6 +88,16 @@ class ArticleScript(implicit
         _ ← B.reply("Сохранили текст", m)
         s ← showArticleContext(a, m)
       } yield s
+
+    case (state, Command(showR(id), _, m)) ⇒
+      A.getById(id.toLong).flatMap{ article ⇒
+        if (article.draft) {
+          for {
+            _ ← B.reply("Статья не найдена", m)
+          } yield state
+        } else showArticle(article.id, m)
+
+      }
   }
 }
 
@@ -118,12 +132,13 @@ object ArticleScript {
     } yield ArticleContext(id)
 
   def showArticleContext(article: Article, meta: Incoming.Meta)(implicit
-    B: BotOps[BotScript.Op],
+    As: AliasOps[BotScript.Op],
+                                                                B: BotOps[BotScript.Op],
                                                                 E: EnvOps[BotScript.Op]): Free[BotScript.Op, BotState] =
     for {
-      host ← E.readHost()
+      url ← As.aliasHref(article, article.id.toString)
       _ ← B.choose(
-        s"${article.title}\n$host/${article.id}",
+        s"${article.title}\n$url",
         ((if (article.draft) Publish else Hide) :: Show :: Nil) ::
           (EditTitle :: EditDescription :: EditContent :: Nil) ::
           Nil,

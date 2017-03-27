@@ -1,45 +1,41 @@
 package mono.web
 
-import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ Directives, Route, StandardRoute }
+import akka.http.scaladsl.server.Route
 import cats.free.Free
 import cats.~>
-import monix.cats.MonixToCatsConversions
 import monix.eval.Task
-import monix.execution.Scheduler.Implicits._
 import mono.article.ArticleOps
 import mono.author.AuthorOps
-import play.twirl.api.Html
 
 import scala.language.higherKinds
+import monix.execution.Scheduler.Implicits.global
+import play.twirl.api.Html
 
-class WebArticle[F[_]](interpreter: F ~> Task)(implicit A: ArticleOps[F], Au: AuthorOps[F]) extends MonixToCatsConversions {
+class WebArticle[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F]) extends Web[F] {
 
-  private def run(program: Free[F, Html]): StandardRoute = complete(
-    program
-    .foldMap(interpreter)
-    .map(h ⇒ HttpEntity(ContentTypes.`text/html(UTF-8)`, h.toString()))
-    .runAsync
-  )
+  import WebArticle._
 
-  // TODO:
-  val route: Route = path(LongNumber) { articleId ⇒
-    run(
-      for {
-        article ← A.getById(articleId)
-        text ← A.getText(articleId)
-        author ← Au.getById(article.authorId)
-      } yield html.article(article, text, author)
-    )
+  override def route(implicit i: F ~> Task): Route = path(LongNumber) { articleId ⇒
+    articleHtml[F](articleId)
 
-  } ~ parameters('offset.as[Int] ? 0, 'limit.as[Int] ? 10, 'authorId.as[Long].?, 'q.?) { (o, l, a, q) ⇒
-    run(
-      for {
-        articles ← A.fetch(a, q, o, l)
-        authors ← Au.getByIds(articles.values.map(_.authorId).toSet)
-      } yield html.articles(articles, authors)
-    )
+  } ~ (pathEndOrSingleSlash & parameters('offset.as[Int] ? 0, 'limit.as[Int] ? 10, 'authorId.as[Long].?, 'q.?)) { (o, l, a, q) ⇒
+    articlesHtml(o, l, a, q)
   }
 
+}
+
+object WebArticle {
+  def articleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F], Au: AuthorOps[F]): Free[F, Html] =
+    for {
+      article ← A.getById(articleId)
+      text ← A.getText(articleId)
+      author ← Au.getById(article.authorId)
+    } yield html.article(article, text, author)
+
+  def articlesHtml[F[_]](offset: Int, limit: Int, authorId: Option[Long], q: Option[String])(implicit A: ArticleOps[F], Au: AuthorOps[F]): Free[F, Html] =
+    for {
+      articles ← A.fetch(authorId, q, offset, limit)
+      authors ← Au.getByIds(articles.values.map(_.authorId).toSet)
+    } yield html.articles(articles, authors)
 }

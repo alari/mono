@@ -53,9 +53,7 @@ import scala.language.higherKinds
 object MonoApp extends App with MonixToCatsConversions {
   println("hello mono")
 
-  // теперь пора сделать слой хттп
-
-  val interpret: Interpret.Op ~> Task = Interpret.inMemory
+  implicit val interpret: Interpret.Op ~> Task = Interpret.inMemory
 
   implicit val system = ActorSystem("mono")
   implicit val mat = ActorMaterializer()
@@ -65,7 +63,7 @@ object MonoApp extends App with MonixToCatsConversions {
     interpreter = _ or interpret
   )
 
-  val web = new WebApp[Interpret.Op](interpret)
+  val web = new WebApp[Interpret.Op]
 
   bot.run()
 

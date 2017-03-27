@@ -4,6 +4,7 @@ import java.time.Instant
 
 import cats.free.Free.inject
 import cats.free.{ Free, Inject }
+
 import scala.language.higherKinds
 
 class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {

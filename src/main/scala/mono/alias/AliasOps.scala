@@ -2,6 +2,7 @@ package mono.alias
 
 import cats.free.{ Free, Inject }
 import Free.inject
+import mono.env.EnvOps
 
 import scala.language.higherKinds
 
@@ -10,18 +11,20 @@ class AliasOps[F[_]](implicit Ao: Inject[AliasOp, F]) {
   def getAlias(id: String): Free[F, Alias] =
     inject[AliasOp, F](GetAlias(id))
 
-  def findArticleAlias(articleId: Long): Free[F, Option[Alias]] =
-    inject[AliasOp, F](FindAlias(AliasPointer.Article(articleId)))
+  def findAlias(pointer: AliasPointer): Free[F, Option[Alias]] =
+    inject[AliasOp, F](FindAliases(pointer :: Nil)).map(_.headOption.map(_._2))
 
-  def findAuthorAlias(authorId: Long): Free[F, Option[Alias]] =
-    inject[AliasOp, F](FindAlias(AliasPointer.Author(authorId)))
+  def findAliases(pointers: AliasPointer*): Free[F, Map[AliasPointer, Alias]] =
+    inject[AliasOp, F](FindAliases(pointers)).map(_.toMap)
 
-  def tryPointArticleTo(id: String, articleId: Long): Free[F, Option[Alias]] =
-    inject[AliasOp, F](TryPointTo(id, AliasPointer.Article(articleId)))
+  def tryPointTo(id: String, pointer: AliasPointer, force: Boolean): Free[F, Option[Alias]] =
+    inject[AliasOp, F](TryPointTo(id, pointer, force))
 
-  def tryPointAuthorTo(id: String, authorId: Long): Free[F, Option[Alias]] =
-    inject[AliasOp, F](TryPointTo(id, AliasPointer.Author(authorId)))
-
+  def aliasHref(pointer: AliasPointer, default: ⇒ String, alias: Option[Alias] = None)(implicit E: EnvOps[F]): Free[F, String] =
+    for {
+      a ← if (alias.isDefined) Free.pure[F, Option[Alias]](alias) else findAlias(pointer)
+      host ← E.readHost()
+    } yield s"$host/${a.map(_.id).getOrElse(default)}"
 }
 
 object AliasOps {

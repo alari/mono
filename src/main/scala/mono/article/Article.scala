@@ -2,6 +2,8 @@ package mono.article
 
 import java.time.Instant
 
+import scala.language.higherKinds
+
 case class Article(
   id:       Long,
   authorId: Long,
