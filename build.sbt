@@ -42,6 +42,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % akkaHttpV,
   "com.typesafe.akka" %% "akka-stream" % akkaV,
   "info.mukel" %% "telegrambot4s" % "2.9.5",
+  "com.pauldijou" %% "jwt-circe" % "0.13.0",
   cats,
   "io.monix" %% "monix" % monixV,
   "io.monix" %% "monix-cats" % monixV,
@@ -53,6 +54,8 @@ libraryDependencies ++= Seq(
   scalatest,
   akkaStreamTest
 )
+
+scalacOptions += "-Ypartial-unification"
 
 //libraryDependencies ++= Seq(
 //  "io.circe" %% "circe-core",

@@ -74,10 +74,10 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
         case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
       }
 
-    case SetDescription(i, t) ⇒
+    case SetHeadline(i, t) ⇒
       articles.get(i) match {
         case Some(a) ⇒
-          val aa = a.copy(description = t)
+          val aa = a.copy(headline = t)
           articles(i) = aa
           Task.now(aa)
         case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))

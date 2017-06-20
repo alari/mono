@@ -14,12 +14,13 @@ import scala.language.implicitConversions
 import monix.execution.Scheduler
 
 trait Web[F[_]] extends MonixToCatsConversions {
-  protected implicit def run(program: Free[F, Html])(implicit i: F ~> Task, s: Scheduler): StandardRoute = complete(
-    program
-    .foldMap(i)
-    .map(h ⇒ HttpEntity(ContentTypes.`text/html(UTF-8)`, h.toString()))
-    .runAsync
-  )
+  protected implicit def run(program: Free[F, Html])(implicit i: F ~> Task, s: Scheduler): StandardRoute =
+    complete(
+      program
+      .foldMap(i)
+      .map(h ⇒ HttpEntity(ContentTypes.`text/html(UTF-8)`, h.toString()))
+      .runAsync
+    )
 
   def route(implicit i: F ~> Task): Route
 }

@@ -53,15 +53,15 @@ class ArticleScript(implicit
         s ← showArticleContext(a, m)
       } yield s
 
-    case (ArticleContext(id), Plain(`EditDescription`, m)) ⇒
+    case (ArticleContext(id), Plain(EditHeadline, m)) ⇒
       for {
         a ← A.getById(id)
-        _ ← B.reply(s"Введите аннотацию\n${a.description.getOrElse("")}", m, forceReply = true)
+        _ ← B.reply(s"Введите аннотацию\n${a.headline.getOrElse("")}", m, forceReply = true)
       } yield ArticleDescriptionContext(id)
 
     case (ArticleDescriptionContext(id), Plain(text, m)) ⇒
       for {
-        a ← A.setDescription(id, Some(text).map(_.trim).filter(_.nonEmpty))
+        a ← A.setHeadline(id, Some(text).map(_.trim).filter(_.nonEmpty))
         _ ← B.reply("Сохранили аннотацию", m)
         s ← showArticleContext(a, m)
       } yield s
@@ -106,7 +106,7 @@ object ArticleScript {
   val Hide = "Скрыть"
   val Show = "Посмотреть"
   val EditTitle = "Название"
-  val EditDescription = "Аннотация"
+  val EditHeadline = "Аннотация"
   val EditContent = "Текст"
 
   def readTextFile(fileId: String)(implicit B: BotOps[BotScript.Op]): Free[BotScript.Op, (Option[String], String)] =
@@ -140,7 +140,7 @@ object ArticleScript {
       _ ← B.choose(
         s"${article.title}\n$url",
         ((if (article.draft) Publish else Hide) :: Show :: Nil) ::
-          (EditTitle :: EditDescription :: EditContent :: Nil) ::
+          (EditTitle :: EditHeadline :: EditContent :: Nil) ::
           Nil,
         meta.chat.id
       )

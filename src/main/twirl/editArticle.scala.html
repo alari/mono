@@ -1,0 +1,24 @@
+@(article: mono.article.Article, text: String)
+
+<html>
+    <head>
+        <title>@{article.title}</title>
+    </head>
+    <body>
+        <article>
+            <form method="post">
+                <fieldset>
+                    <legend>Заголовок</legend>
+                    <input type="text" name="title" value="@{article.title}"/>
+                </fieldset>
+                <fieldset>
+                    <legend>Подзаголовок/хэдлайн</legend>
+                    <input type="text" name="headline" value="@{article.headline.getOrElse("")}"/>
+                </fieldset>
+                <textarea name="text">@{text}</textarea>
+                <hr/>
+                <input type="submit" value="Сохранить"/>
+            </form>
+        </article>
+    </body>
+</html>

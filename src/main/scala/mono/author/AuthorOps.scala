@@ -17,6 +17,9 @@ class AuthorOps[F[_]](implicit Au: Inject[AuthorOp, F]) {
 
   def getByIds(ids: Set[Long]): Free[F, Map[Long, Author]] =
     inject[AuthorOp, F](GetAuthorsByIds(ids))
+
+  def findByTelegramId(telegramId: Long): Free[F, Option[Author]] =
+    inject[AuthorOp, F](FindAuthorByTelegramId(telegramId))
 }
 
 object AuthorOps {

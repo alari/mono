@@ -24,5 +24,8 @@ class AuthorsInMemoryInterpreter extends (AuthorOp ~> Task) {
 
     case GetAuthorsByIds(ids) ⇒
       Task.now(ids.toList.flatMap(stateById.get).map(a ⇒ a.id → a).toMap.asInstanceOf[A])
+
+    case FindAuthorByTelegramId(telegramId) ⇒
+      Task.now(stateById.values.find(_.telegramId == telegramId).asInstanceOf[A])
   }
 }

@@ -35,4 +35,4 @@ case class SetText(id: Long, text: String) extends ArticleOp[String]
 
 case class SetTitle(id: Long, text: String) extends ArticleOp[Article]
 
-case class SetDescription(id: Long, text: Option[String]) extends ArticleOp[Article]
+case class SetHeadline(id: Long, text: Option[String]) extends ArticleOp[Article]

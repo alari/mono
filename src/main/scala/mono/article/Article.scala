@@ -8,8 +8,8 @@ case class Article(
   id:       Long,
   authorId: Long,
 
-  title:       String,
-  description: Option[String],
+  title:    String,
+  headline: Option[String],
 
   createdAt: Instant,
 
