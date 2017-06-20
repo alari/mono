@@ -1,5 +1,7 @@
 package mono.bot.script
 
+import java.time.Instant
+
 import cats.free.Free
 import mono.alias.AliasOps
 import mono.article.{ Article, ArticleOps }
@@ -8,6 +10,7 @@ import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot.BotState.{ ArticleContentContext, ArticleContext, ArticleDescriptionContext, ArticleTitleContext }
 import mono.bot._
 import mono.env.EnvOps
+import pdi.jwt.JwtClaim
 
 import scala.io.Source
 
@@ -145,8 +148,16 @@ object ArticleScript {
         case Some(a) if a.id == article.authorId ⇒
           for {
             host ← E.readHost()
+            token ← E.issueToken(
+              JwtClaim(
+                issuer = Some("telegram"),
+                subject = Some(meta.chat.id.toString),
+                audience = Some(Set(s"edit/${article.id}")),
+                issuedAt = Some(Instant.now().getEpochSecond)
+              )
+            )
             _ ← B.choose(
-              s"${article.title}\n$url\nEdit: $host/edit/${article.id}?token=telegram:${meta.chat.id}:edit/${article.id}", // TODO: issue token right way
+              s"${article.title}\n$url\nEdit: $host/edit/${article.id}?token=$token",
               ((if (article.draft) Publish else Hide) :: Show :: Nil) ::
                 (EditTitle :: EditHeadline :: EditContent :: Nil) ::
                 Nil,

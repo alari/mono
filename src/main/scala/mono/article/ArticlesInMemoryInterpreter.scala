@@ -1,5 +1,6 @@
 package mono.article
 
+import java.time.ZoneId
 import java.util.concurrent.atomic.AtomicLong
 
 import cats.~>
@@ -21,7 +22,7 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
 
   override def apply[A](fa: ArticleOp[A]): Task[A] = (fa match {
     case CreateArticle(user, title, createdAt) ⇒
-      val a = Article(id.getAndIncrement(), user, title, None, createdAt, draft = true)
+      val a = Article(id.getAndIncrement(), user, title, None, createdAt, createdAt, createdAt.atZone(ZoneId.systemDefault()).getYear, 0, draft = true)
       articles.put(a.id, a)
       Task.now(a)
 
@@ -62,10 +63,12 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
       Task.now(texts.getOrElse(i, ""))
 
     case SetText(i, t) ⇒
+      // TODO: increment version, update modifiedAt
       texts(i) = t
       Task.now(t)
 
     case SetTitle(i, t) ⇒
+      // TODO: increment version, update modifiedAt
       articles.get(i) match {
         case Some(a) ⇒
           val aa = a.copy(title = t)
@@ -75,6 +78,7 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
       }
 
     case SetHeadline(i, t) ⇒
+      // TODO: increment version, update modifiedAt
       articles.get(i) match {
         case Some(a) ⇒
           val aa = a.copy(headline = t)
@@ -82,6 +86,8 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
           Task.now(aa)
         case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
       }
+
+    // TODO: update and validate all the other fields
 
   }).map(_.asInstanceOf[A])
 }
