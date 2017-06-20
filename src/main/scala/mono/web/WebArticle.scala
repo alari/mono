@@ -7,7 +7,7 @@ import cats.free.Free
 import cats.~>
 import monix.eval.Task
 import mono.article.ArticleOps
-import mono.author.AuthorOps
+import mono.author.{ Author, AuthorOps }
 
 import scala.language.higherKinds
 import monix.execution.Scheduler.Implicits.global
@@ -23,11 +23,10 @@ class WebArticle[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F]) extends Web[
     articleHtml[F](articleId)
   } ~ path("edit" / LongNumber){ articleId ⇒
     checkToken[F](s"edit/" + articleId).apply { maybeAuthorF ⇒
-      // TODO: check permissions
       get {
         editArticleHtml[F](articleId)
       } ~ (post & entity(as[FormData])) { d ⇒
-        updateArticleHtml[F](articleId, d.fields.toMap)
+        updateArticleHtml[F](articleId, d.fields.toMap, maybeAuthorF)
       }
     }
   } ~ (pathEndOrSingleSlash & parameters('offset.as[Int] ? 0, 'limit.as[Int] ? 10, 'authorId.as[Long].?, 'q.?)) { (o, l, a, q) ⇒
@@ -37,15 +36,20 @@ class WebArticle[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F]) extends Web[
 }
 
 object WebArticle {
-  def updateArticleHtml[F[_]](articleId: Long, fields: Map[String, String])(implicit A: ArticleOps[F]): Free[F, Html] =
-    for {
-      article ← A.getById(articleId)
-      text ← A.getText(articleId)
-      _ ← A.setTitle(articleId, fields.getOrElse("title", article.title))
-      _ ← A.setHeadline(articleId, fields.get("headline"))
-      _ ← A.setText(articleId, fields.getOrElse("text", text))
-      html ← editArticleHtml(articleId)
-    } yield html
+  def updateArticleHtml[F[_]](articleId: Long, fields: Map[String, String], maybeAuthorF: Free[F, Option[Author]])(implicit A: ArticleOps[F]): Free[F, Html] =
+    maybeAuthorF.flatMap {
+      case Some(author) ⇒ // this is an actor. TODO: use him as a contributor
+        for {
+          article ← A.getById(articleId)
+          text ← A.getText(articleId)
+          _ ← A.setTitle(articleId, fields.getOrElse("title", article.title))
+          _ ← A.setHeadline(articleId, fields.get("headline"))
+          _ ← A.setText(articleId, fields.getOrElse("text", text))
+          html ← editArticleHtml(articleId)
+        } yield html
+      case None ⇒
+        editArticleHtml(articleId)
+    }
 
   def editArticleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F]): Free[F, Html] =
     for {

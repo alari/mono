@@ -3,6 +3,7 @@ package mono.bot.script
 import cats.free.Free
 import mono.alias.AliasOps
 import mono.article.{ Article, ArticleOps }
+import mono.author.AuthorOps
 import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot.BotState.{ ArticleContentContext, ArticleContext, ArticleDescriptionContext, ArticleTitleContext }
 import mono.bot._
@@ -133,17 +134,33 @@ object ArticleScript {
 
   def showArticleContext(article: Article, meta: Incoming.Meta)(implicit
     As: AliasOps[BotScript.Op],
-                                                                B: BotOps[BotScript.Op],
-                                                                E: EnvOps[BotScript.Op]): Free[BotScript.Op, BotState] =
+                                                                Au: AuthorOps[BotScript.Op],
+                                                                B:  BotOps[BotScript.Op],
+                                                                E:  EnvOps[BotScript.Op]): Free[BotScript.Op, BotState] =
     for {
       url ← As.aliasHref(article, article.id.toString)
-      _ ← B.choose(
-        s"${article.title}\n$url",
-        ((if (article.draft) Publish else Hide) :: Show :: Nil) ::
-          (EditTitle :: EditHeadline :: EditContent :: Nil) ::
-          Nil,
-        meta.chat.id
-      )
+      current ← Au.findByTelegramId(meta.chat.id)
+
+      _ ← current match {
+        case Some(a) if a.id == article.authorId ⇒
+          for {
+            host ← E.readHost()
+            _ ← B.choose(
+              s"${article.title}\n$url\nEdit: $host/edit/${article.id}?token=telegram:${meta.chat.id}:edit/${article.id}", // TODO: issue token right way
+              ((if (article.draft) Publish else Hide) :: Show :: Nil) ::
+                (EditTitle :: EditHeadline :: EditContent :: Nil) ::
+                Nil,
+              meta.chat.id
+            )
+          } yield ()
+
+        case _ ⇒
+          B.say(
+            s"${article.title}\n$url",
+            meta.chat.id
+          )
+      }
+
     } yield ArticleContext(article.id)
 
   def apply()(implicit
