@@ -123,7 +123,7 @@ class MonoBot(
               .flatMapConcat(_.entity.dataBytes)
               .runWith(FileIO.toPath(path))
           )
-        } yield path
+        } yield path.asInstanceOf[A]
 
     }
   }
@@ -134,5 +134,5 @@ class MonoBot(
       case u if u.editedMessage.isDefined ⇒ Incoming.telegram(u.editedMessage.get, isUpdate = true)
     }.to(BotProcessor(script, interpreter(botOpInt))).run()
 
-  override def shutdown(): Future[_] = Future.successful(())
+  override def shutdown(): Future[Unit] = Future.successful(())
 }

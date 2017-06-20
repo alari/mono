@@ -1,5 +1,6 @@
 package mono.bot
 
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicLong
 
 import cats.~>
@@ -21,5 +22,8 @@ object BotConsoleInterpreter extends (BotOp ~> Task) {
       println(text)
       variants.foreach(v ⇒ println("\t" + v.mkString("\t")))
       Task.now(mId.getAndIncrement().asInstanceOf[A])
+
+    case LoadFile(_) ⇒
+      Task.never[Path].map(_.asInstanceOf[A])
   }
 }

@@ -7,7 +7,7 @@ name := "monolith"
 
 version := "1.0"
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.2"
 
 val commonScalariform = scalariformSettings :+ (ScalariformKeys.preferences := ScalariformKeys.preferences.value
   .setPreference(AlignParameters, true)
@@ -25,10 +25,10 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots")
 )
 
-val monixV = "2.2.2"
-val akkaV = "2.5.0-RC1"
-val akkaHttpV = "10.0.5"
-val circeV = "0.7.0"
+val monixV = "2.3.0"
+val akkaV = "2.5.3"
+val akkaHttpV = "10.0.7"
+val circeV = "0.8.0"
 val doobieV = "0.4.1"
 
 val logback = "ch.qos.logback" % "logback-classic" % "1.2.2"
@@ -41,7 +41,7 @@ val cats = "org.typelevel" %% "cats" % "0.9.0"
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % akkaHttpV,
   "com.typesafe.akka" %% "akka-stream" % akkaV,
-  "info.mukel" %% "telegrambot4s" % "2.1.0-SNAPSHOT",
+  "info.mukel" %% "telegrambot4s" % "2.9.5",
   cats,
   "io.monix" %% "monix" % monixV,
   "io.monix" %% "monix-cats" % monixV,

@@ -10,12 +10,16 @@ import Directives._
 import monix.execution.Scheduler.Implicits.global
 
 import scala.language.higherKinds
+import scala.util.{ Failure, Success }
 
 class WebAlias[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], As: AliasOps[F]) extends Web[F] {
 
   def resolveAlias(implicit i: F ~> Task): Directive1[Alias] =
     path(Segment).flatMap(id ⇒
-      onSuccess(As.getAlias(id).foldMap(i).runAsync))
+      onComplete(As.getAlias(id).foldMap(i).runAsync).flatMap {
+        case Success(a) ⇒ provide(a)
+        case Failure(_) ⇒ reject
+      })
 
   override def route(implicit i: F ~> Task): Route = resolveAlias(i){ alias ⇒
     alias.pointer match {
