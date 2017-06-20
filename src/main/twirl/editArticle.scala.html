@@ -1,4 +1,4 @@
-@(article: mono.article.Article, text: String)
+@(article: mono.article.Article, text: String, errors: Map[String,List[String]])
 
 <html>
     <head>
@@ -10,12 +10,28 @@
                 <fieldset>
                     <legend>Заголовок</legend>
                     <input type="text" name="title" value="@{article.title}"/>
+                    @errors.getOrElse("title", Nil).map {err =>
+                      <div>Error: @err</div>
+                    }
                 </fieldset>
                 <fieldset>
                     <legend>Подзаголовок/хэдлайн</legend>
                     <input type="text" name="headline" value="@{article.headline.getOrElse("")}"/>
+                    @errors.getOrElse("headline", Nil).map {err =>
+                        <div>Error: @err</div>
+                    }
                 </fieldset>
                 <textarea name="text">@{text}</textarea>
+                @errors.getOrElse("text", Nil).map {err =>
+                    <div>Error: @err</div>
+                }
+                <fieldset>
+                    <legend>Год первой публикации</legend>
+                    <input type="number" name="publishedAt" value="@{article.publishedAt}"/>
+                    @errors.getOrElse("publishedAt", Nil).map {err =>
+                        <div>Error: @err</div>
+                    }
+                </fieldset>
                 <hr/>
                 <input type="submit" value="Сохранить"/>
             </form>

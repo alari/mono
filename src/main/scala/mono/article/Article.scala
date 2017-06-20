@@ -1,6 +1,6 @@
 package mono.article
 
-import java.time.{ Instant, YearMonth }
+import java.time.Instant
 
 import scala.language.higherKinds
 

@@ -33,6 +33,8 @@ case class GetText(id: Long) extends ArticleOp[String]
 
 case class SetText(id: Long, text: String) extends ArticleOp[String]
 
+case class UpdateArticle(id: Long, title: String, headline: Option[String], publishedAt: Int) extends ArticleOp[Article]
+
 case class SetTitle(id: Long, text: String) extends ArticleOp[Article]
 
 case class SetHeadline(id: Long, text: Option[String]) extends ArticleOp[Article]

@@ -1,6 +1,6 @@
 package mono.article
 
-import java.time.ZoneId
+import java.time.{ Instant, ZoneId }
 import java.util.concurrent.atomic.AtomicLong
 
 import cats.~>
@@ -63,31 +63,50 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
       Task.now(texts.getOrElse(i, ""))
 
     case SetText(i, t) ⇒
-      // TODO: increment version, update modifiedAt
       texts(i) = t
+      articles(i) = articles(i).copy(modifiedAt = Instant.now(), version = articles(i).version + 1)
       Task.now(t)
 
     case SetTitle(i, t) ⇒
-      // TODO: increment version, update modifiedAt
       articles.get(i) match {
         case Some(a) ⇒
-          val aa = a.copy(title = t)
+          val aa = a.copy(
+            title = t,
+            modifiedAt = Instant.now(),
+            version = a.version + 1
+          )
           articles(i) = aa
           Task.now(aa)
         case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
       }
 
     case SetHeadline(i, t) ⇒
-      // TODO: increment version, update modifiedAt
       articles.get(i) match {
         case Some(a) ⇒
-          val aa = a.copy(headline = t)
+          val aa = a.copy(
+            headline = t,
+            modifiedAt = Instant.now(),
+            version = a.version + 1
+          )
           articles(i) = aa
           Task.now(aa)
         case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
       }
 
-    // TODO: update and validate all the other fields
+    case UpdateArticle(i, title, headline, publishedAt) ⇒
+      articles.get(i) match {
+        case Some(a) ⇒
+          val aa = a.copy(
+            title = title,
+            headline = headline,
+            publishedAt = publishedAt,
+            version = a.version + 1,
+            modifiedAt = Instant.now()
+          )
+          articles(i) = aa
+          Task.now(aa)
+        case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
+      }
 
   }).map(_.asInstanceOf[A])
 }
