@@ -1,6 +1,6 @@
 package mono
 
-import java.nio.file.{ Files, Paths }
+import java.nio.file.{ Files }
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -16,7 +16,7 @@ import info.mukel.telegrambot4s.models._
 import monix.eval.Task
 import mono.bot._
 
-import scala.concurrent.Future
+import scala.concurrent.{ Future, Promise }
 
 class MonoBot(
   script:      (BotState, Incoming) ⇒ Free[BotScript.Op, BotState],
@@ -42,6 +42,7 @@ class MonoBot(
           request(GetUpdates(Some(maxOffset + 1), timeout = Some(pollingInterval)))
             .recover {
               case e: Exception ⇒
+                println(Console.RED + e + Console.RESET)
                 logger.error("GetUpdates failed", e)
                 Seq.empty[Update]
             }
@@ -109,6 +110,26 @@ class MonoBot(
           )
         )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
 
+      case Inline(text, buttons, chatId) ⇒
+        Task.fromFuture(request(
+          SendMessage(
+            Left(chatId),
+            text,
+            Some(ParseMode.Markdown),
+            None,
+            None,
+            None,
+            Some(InlineKeyboardMarkup(
+              buttons.map(_.map{
+                case Inline.UrlButton(t, url) ⇒
+                  InlineKeyboardButton(t, url = Some(url))
+                case Inline.CallbackButton(t, callback) ⇒
+                  InlineKeyboardButton(t, callbackData = Some(callback))
+              })
+            ))
+          )
+        )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
+
       case LoadFile(fileId) ⇒
         for {
           f ← Task.fromFuture(
@@ -124,7 +145,6 @@ class MonoBot(
               .runWith(FileIO.toPath(path))
           )
         } yield path.asInstanceOf[A]
-
     }
   }
 

@@ -12,6 +12,8 @@ case class Command(name: String, tail: Option[String], meta: Incoming.Meta) exte
 
 case class File(id: String, mimeType: Option[String], name: Option[String], size: Option[Int], meta: Incoming.Meta) extends Incoming
 
+case class Image(fileId: String, caption: Option[String], meta: Incoming.Meta) extends Incoming
+
 case class Unknown(meta: Incoming.Meta) extends Incoming
 
 object Incoming {
@@ -44,7 +46,13 @@ object Incoming {
             File(doc.fileId, doc.mimeType, doc.fileName, doc.fileSize, m)
 
           case None ⇒
-            Unknown(m)
+            msg.photo match {
+              case Some(photoSizes) ⇒
+                val s = photoSizes.maxBy(s ⇒ s.height * s.width)
+                Image(s.fileId, msg.caption, m)
+
+              case None ⇒ Unknown(m)
+            }
         }
     }
   }

@@ -34,6 +34,8 @@ case class Article(
   title:    String,
   headline: Option[String],
 
+  coverId: Option[Long],
+
   createdAt:   Instant,
   modifiedAt:  Instant,
   publishedAt: Int,

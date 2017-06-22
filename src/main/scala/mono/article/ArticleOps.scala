@@ -52,6 +52,9 @@ class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {
   def setHeadline(id: Long, text: Option[String]): Free[F, Article] =
     inject[ArticleOp, F](SetHeadline(id, text))
 
+  def setCover(id: Long, coverId: Option[Long]): Free[F, Article] =
+    inject[ArticleOp, F](SetCover(id, coverId))
+
   def update(id: Long, title: String, headline: Option[String], publishedAt: Int): Free[F, Article] =
     inject[ArticleOp, F](UpdateArticle(id, title, headline, publishedAt))
 }

@@ -1,4 +1,4 @@
-@(article: mono.article.Article, text: String, author: mono.author.Author)
+@(article: mono.article.Article, text: String, author: mono.author.Author, cover: Option[mono.image.Image])
 
 <html>
     <head>
@@ -7,6 +7,11 @@
     <body>
         <article>
             <h1>@{article.title}</h1>
+
+            @for(c <- cover) {
+                <div>Cover: @c</div>
+                <div><img src="@{c.url}"/></div>
+            }
 
             <time>@{article.createdAt}</time>
 

@@ -22,7 +22,7 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
 
   override def apply[A](fa: ArticleOp[A]): Task[A] = (fa match {
     case CreateArticle(user, title, createdAt) ⇒
-      val a = Article(id.getAndIncrement(), user, title, None, createdAt, createdAt, createdAt.atZone(ZoneId.systemDefault()).getYear, 0, draft = true)
+      val a = Article(id.getAndIncrement(), user, title, None, None, createdAt, createdAt, createdAt.atZone(ZoneId.systemDefault()).getYear, 0, draft = true)
       articles.put(a.id, a)
       Task.now(a)
 
@@ -85,6 +85,19 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
         case Some(a) ⇒
           val aa = a.copy(
             headline = t,
+            modifiedAt = Instant.now(),
+            version = a.version + 1
+          )
+          articles(i) = aa
+          Task.now(aa)
+        case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
+      }
+
+    case SetCover(i, c) ⇒
+      articles.get(i) match {
+        case Some(a) ⇒
+          val aa = a.copy(
+            coverId = c,
             modifiedAt = Instant.now(),
             version = a.version + 1
           )

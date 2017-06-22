@@ -8,11 +8,12 @@ import mono.article.ArticleOps
 import mono.author.AuthorOps
 import Directives._
 import monix.execution.Scheduler.Implicits.global
+import mono.image.ImageOps
 
 import scala.language.higherKinds
 import scala.util.{ Failure, Success }
 
-class WebAlias[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], As: AliasOps[F]) extends Web[F] {
+class WebAlias[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], Im: ImageOps[F], As: AliasOps[F]) extends Web[F] {
 
   def resolveAlias(implicit i: F ~> Task): Directive1[Alias] =
     path(Segment).flatMap(id ⇒

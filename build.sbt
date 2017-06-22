@@ -37,6 +37,7 @@ val scalatest = "org.scalatest" %% "scalatest" % "3.0.1" % Test
 val icu =  "com.ibm.icu" % "icu4j" % "58.2"
 val akkaStreamTest = "com.typesafe.akka" %% "akka-stream-testkit" % akkaV % Test
 val cats = "org.typelevel" %% "cats" % "0.9.0"
+val scrimage = "com.sksamuel.scrimage" %% "scrimage-core" % "2.1.8"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % akkaHttpV,
@@ -49,6 +50,7 @@ libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-core-cats" % doobieV,
   "org.tpolecat" %% "doobie-postgres-cats" % doobieV,
   icu,
+  scrimage,
   shapeless,
   logback,
   scalatest,

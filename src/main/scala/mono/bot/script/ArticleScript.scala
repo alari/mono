@@ -10,6 +10,7 @@ import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot.BotState.{ ArticleContentContext, ArticleContext, ArticleDescriptionContext, ArticleTitleContext }
 import mono.bot._
 import mono.env.EnvOps
+import mono.image.ImageOps
 import pdi.jwt.JwtClaim
 
 import scala.io.Source
@@ -21,6 +22,8 @@ class ArticleScript(implicit
   B: BotOps[BotScript.Op],
                     A:  ArticleOps[BotScript.Op],
                     As: AliasOps[BotScript.Op],
+                    Au: AuthorOps[BotScript.Op],
+                    Im: ImageOps[BotScript.Op],
                     E:  EnvOps[BotScript.Op]) extends Script {
 
   import ArticleScript._
@@ -74,6 +77,15 @@ class ArticleScript(implicit
       for {
         _ ← B.reply("Введите содержимое", m)
       } yield ArticleContentContext(id)
+
+    case (ArticleContext(id), Image(fileId, caption, m)) ⇒
+      for {
+        ft ← B.loadFile(fileId)
+        a ← Au.ensureTelegram(m.chat.id, m.chat.title.getOrElse(m.chat.id.toString))
+        i ← Im.upload(a.id, ft, caption)
+        a ← A.setCover(id, i.toOption.map(_.id))
+        s ← showArticleContext(a, m)
+      } yield s
 
     case (ArticleContentContext(id), Plain(text, m)) ⇒
       for {
@@ -156,11 +168,10 @@ object ArticleScript {
                 issuedAt = Some(Instant.now().getEpochSecond)
               )
             )
-            _ ← B.choose(
-              s"${article.title}\n$url\nEdit: $host/edit/${article.id}?token=$token",
-              ((if (article.draft) Publish else Hide) :: Show :: Nil) ::
-                (EditTitle :: EditHeadline :: EditContent :: Nil) ::
-                Nil,
+
+            _ ← B.inline(
+              s"**${article.title}**",
+              Seq(Seq(Inline.UrlButton("Смотреть", url), Inline.UrlButton("Редактировать", s"$host/edit/${article.id}?token=$token"))),
               meta.chat.id
             )
           } yield ()

@@ -38,3 +38,5 @@ case class UpdateArticle(id: Long, title: String, headline: Option[String], publ
 case class SetTitle(id: Long, text: String) extends ArticleOp[Article]
 
 case class SetHeadline(id: Long, text: Option[String]) extends ArticleOp[Article]
+
+case class SetCover(id: Long, coverId: Option[Long]) extends ArticleOp[Article]

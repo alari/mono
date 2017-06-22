@@ -11,13 +11,15 @@ import mono.author.AuthorOps
 import akka.http.scaladsl.server.Directives._
 import mono.alias.AliasOps
 import mono.env.EnvOps
+import mono.image.ImageOps
 
 import scala.language.higherKinds
 
-class WebApp[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], As: AliasOps[F], E: EnvOps[F]) extends Web[F] {
+class WebApp[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], As: AliasOps[F], Im: ImageOps[F], E: EnvOps[F]) extends Web[F] {
 
   override def route(implicit i: F ~> Task): Route =
     new WebArticle[F].route ~
+      new WebImage[F].route ~
       new WebAlias[F].route ~
       getFromResourceDirectory("web")
 

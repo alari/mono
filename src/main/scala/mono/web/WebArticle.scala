@@ -15,8 +15,9 @@ import monix.execution.Scheduler.Implicits.global
 import mono.env.EnvOps
 import play.twirl.api.Html
 import cats.implicits._
+import mono.image.{ Image, ImageOps }
 
-class WebArticle[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], E: EnvOps[F]) extends Web[F] {
+class WebArticle[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], E: EnvOps[F], Im: ImageOps[F]) extends Web[F] {
 
   import WebArticle._
   import WebTokenCheck._
@@ -99,12 +100,16 @@ object WebArticle {
       text ← A.getText(articleId)
     } yield html.editArticle(article, text, Map.empty)
 
-  def articleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F], Au: AuthorOps[F]): Free[F, Html] =
+  def articleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F], Au: AuthorOps[F], Im: ImageOps[F]): Free[F, Html] =
     for {
       article ← A.getById(articleId)
       text ← A.getText(articleId)
       author ← Au.getById(article.authorId)
-    } yield html.article(article, text, author)
+      cover ← article.coverId match {
+        case Some(coverId) ⇒ Im.find(coverId)
+        case None          ⇒ Free.pure[F, Option[Image]](None)
+      }
+    } yield html.article(article, text, author, cover)
 
   def articlesHtml[F[_]](offset: Int, limit: Int, authorId: Option[Long], q: Option[String])(implicit A: ArticleOps[F], Au: AuthorOps[F]): Free[F, Html] =
     for {
