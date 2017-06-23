@@ -11,6 +11,7 @@ import mono.web.WebApp
 
 import scala.io.StdIn
 import scala.language.higherKinds
+import scala.util.Try
 
 /*
 - сделать кнопку публиковать/драфт статьи инлайн, с обновлением сообщения, куда ткнуто. остальные функции нахер
@@ -64,14 +65,14 @@ object MonoApp extends App with MonixToCatsConversions {
   implicit val system = ActorSystem("mono")
   implicit val mat = ActorMaterializer()
 
-  val bot = new MonoBot(
-    script = BotScript(),
-    interpreter = _ or interpret
-  )
+  Try(scala.io.Source.fromResource("bot.token").getLines().mkString).foreach(token ⇒
+    new MonoBot(
+      token,
+      script = BotScript(),
+      interpreter = _ or interpret
+    ).run())
 
   val web = new WebApp[Interpret.Op]
-
-  bot.run()
 
   web.run()
 

@@ -1,6 +1,6 @@
 package mono
 
-import java.nio.file.{ Files }
+import java.nio.file.Files
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -16,15 +16,14 @@ import info.mukel.telegrambot4s.models._
 import monix.eval.Task
 import mono.bot._
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
 
 class MonoBot(
-  script:      (BotState, Incoming) ⇒ Free[BotScript.Op, BotState],
-  interpreter: (BotOp ~> Task) ⇒ (BotScript.Op ~> Task)
+  override val token: String,
+  script:             (BotState, Incoming) ⇒ Free[BotScript.Op, BotState],
+  interpreter:        (BotOp ~> Task) ⇒ (BotScript.Op ~> Task)
 )(implicit override val system: ActorSystem, override val materializer: ActorMaterializer)
     extends TelegramBot {
-
-  override def token: String = scala.io.Source.fromResource("bot.token").getLines().mkString
 
   val pollingInterval: Int = 20
 
