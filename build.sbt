@@ -31,6 +31,7 @@ val akkaHttpV = "10.0.7"
 val circeV = "0.8.0"
 val doobieV = "0.4.1"
 
+val markdown = "com.atlassian.commonmark" % "commonmark" % "0.9.0"
 val logback = "ch.qos.logback" % "logback-classic" % "1.2.2"
 val shapeless = "com.chuusai" %% "shapeless" % "2.3.2"
 val scalatest = "org.scalatest" %% "scalatest" % "3.0.1" % Test
@@ -51,6 +52,7 @@ libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-postgres-cats" % doobieV,
   icu,
   scrimage,
+  markdown,
   shapeless,
   logback,
   scalatest,
