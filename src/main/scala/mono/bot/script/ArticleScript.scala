@@ -82,7 +82,7 @@ class ArticleScript(implicit
       for {
         ft ← B.loadFile(fileId)
         a ← Au.ensureTelegram(m.chat.id, m.chat.title.getOrElse(m.chat.id.toString))
-        i ← Im.upload(a.id, ft, caption)
+        i ← Im.store(a.id, ft, caption)
         a ← A.setCover(id, i.toOption.map(_.id))
         s ← showArticleContext(a, m)
       } yield s
@@ -171,7 +171,12 @@ object ArticleScript {
 
             _ ← B.inline(
               s"**${article.title}**",
-              Seq(Seq(Inline.UrlButton("Смотреть", url), Inline.UrlButton("Редактировать", s"$host/edit/${article.id}?token=$token"))),
+              Seq(
+                Seq(
+                  Inline.UrlButton("Смотреть", url),
+                  Inline.UrlButton("Редактировать", s"$host/edit/${article.id}?token=$token")
+                )
+              ),
               meta.chat.id
             )
           } yield ()

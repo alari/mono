@@ -28,7 +28,7 @@ object BotConsoleInterpreter extends (BotOp ~> Task) {
 
     case Inline(text, inline, _) ⇒
       println(text)
-      inline.foreach(v => println("\t" + v.mkString("\t")))
+      inline.foreach(v ⇒ println("\t" + v.mkString("\t")))
       Task.now(mId.getAndIncrement().asInstanceOf[A])
   }
 }

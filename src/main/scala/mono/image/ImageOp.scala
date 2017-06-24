@@ -4,7 +4,7 @@ import java.nio.file.Path
 
 sealed trait ImageOp[T]
 
-case class UploadImage(
+case class StoreImage(
   userId: Long, file: Path, caption: Option[String]
 ) extends ImageOp[Either[String, Image]]
 

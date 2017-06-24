@@ -8,10 +8,10 @@ import cats.free.{ Free, Inject }
 import scala.language.higherKinds
 
 class ImageOps[F[_]](implicit I: Inject[ImageOp, F]) {
-  def upload(
+  def store(
     userId: Long, file: Path, caption: Option[String]
   ): Free[F, Either[String, Image]] =
-    inject[ImageOp, F](UploadImage(userId, file, caption))
+    inject[ImageOp, F](StoreImage(userId, file, caption))
 
   def find(imageId: Long): Free[F, Option[Image]] =
     inject[ImageOp, F](FindImage(imageId))

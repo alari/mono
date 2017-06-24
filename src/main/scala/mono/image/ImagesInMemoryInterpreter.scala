@@ -5,12 +5,15 @@ import java.nio.file.{ Files, Path }
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
 import java.security.MessageDigest
+import javax.imageio.ImageIO
 
 import cats.~>
 import monix.eval.Task
 import com.sksamuel.scrimage.{ Image ⇒ ScrImage }
 
 import scala.collection.concurrent.TrieMap
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 class ImagesInMemoryInterpreter extends (ImageOp ~> Task) {
   private val cache = TrieMap.empty[Long, (Image, Path)]
@@ -30,25 +33,44 @@ class ImagesInMemoryInterpreter extends (ImageOp ~> Task) {
   }
 
   override def apply[A](fa: ImageOp[A]): Task[A] = fa match {
-    case UploadImage(userId, file, caption) ⇒
-      val scri = ScrImage.fromPath(file)
+    case StoreImage(userId, file, caption) ⇒
+      // TODO: check if this user has already uploaded this image, return it from cache
 
-      val (w, h) = scri.dimensions
+      Task.defer(Task.fromTry(Try{
+        val iis = ImageIO.createImageInputStream(file.toFile)
 
-      val image = Image(
-        id = id.getAndIncrement(),
-        hash = md5file(file),
-        size = Files.size(file),
-        authorId = userId,
-        createdAt = Instant.now(),
-        subType = "jpeg",
-        caption = caption,
-        width = w,
-        height = h
-      )
-      cache(image.id) = (image, file)
+        ImageIO.getImageReaders(iis)
+          .asScala
+          .toStream
+          .map(_.getFormatName)
+          .headOption
+          .fold[Either[String, String]](Left("Image format not found"))(f ⇒ Right(f.toLowerCase))
+      })).map {
+        case Right(subType) ⇒
+          val scri = ScrImage.fromPath(file)
 
-      Task.now(Right[String, Image](image).asInstanceOf[A])
+          val (w, h) = scri.dimensions
+
+          val image = Image(
+            id = id.getAndIncrement(),
+            hash = md5file(file),
+            size = Files.size(file),
+            authorId = userId,
+            createdAt = Instant.now(),
+            subType = subType,
+            caption = caption,
+            width = w,
+            height = h
+          )
+          cache(image.id) = (image, file)
+
+          Right[String, Image](image).asInstanceOf[A]
+
+        case Left(err) ⇒
+          Left[String, Image](err).asInstanceOf[A]
+      }.onErrorRecover[A] {
+        case e ⇒ Left(e.getMessage).asInstanceOf[A]
+      }
 
     case GetImageFile(image) ⇒
       Task.now(cache(image.id)._2.asInstanceOf[A])
