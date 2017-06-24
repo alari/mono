@@ -11,7 +11,7 @@ import akka.stream.scaladsl.{ FileIO, Source }
 import cats.free.Free
 import cats.~>
 import info.mukel.telegrambot4s.api.TelegramBot
-import info.mukel.telegrambot4s.methods.{ GetFile, GetUpdates, ParseMode, SendMessage }
+import info.mukel.telegrambot4s.methods._
 import info.mukel.telegrambot4s.models._
 import monix.eval.Task
 import mono.bot._
@@ -109,7 +109,7 @@ class MonoBot(
           )
         )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
 
-      case Inline(text, buttons, chatId) ⇒
+      case Inline(text, buttons, chatId, None) ⇒
         Task.fromFuture(request(
           SendMessage(
             Left(chatId),
@@ -129,6 +129,23 @@ class MonoBot(
           )
         )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
 
+      case Inline(_, buttons, chatId, Some(msgId)) ⇒
+        Task.fromFuture(request(
+          EditMessageReplyMarkup(
+            Some(Left(chatId)),
+            Some(msgId),
+            None,
+            Some(InlineKeyboardMarkup(
+              buttons.map(_.map{
+                case Inline.UrlButton(t, url) ⇒
+                  InlineKeyboardButton(t, url = Some(url))
+                case Inline.CallbackButton(t, callback) ⇒
+                  InlineKeyboardButton(t, callbackData = Some(callback))
+              })
+            ))
+          )
+        )).map(m ⇒ m.left.map(_.messageId).getOrElse(0l)).asInstanceOf[Task[A]]
+
       case LoadFile(fileId) ⇒
         for {
           f ← Task.fromFuture(
@@ -144,6 +161,11 @@ class MonoBot(
               .runWith(FileIO.toPath(path))
           )
         } yield path.asInstanceOf[A]
+
+      case InlineAnswer(text, callbackId, _) ⇒
+        Task.fromFuture(
+          request(AnswerCallbackQuery(callbackId, text, None, None, None))
+        ).map(_ ⇒ ().asInstanceOf[A])
     }
   }
 
@@ -151,6 +173,7 @@ class MonoBot(
     updatesSrc.collect {
       case u if u.message.isDefined       ⇒ Incoming.telegram(u.message.get)
       case u if u.editedMessage.isDefined ⇒ Incoming.telegram(u.editedMessage.get, isUpdate = true)
+      case u if u.callbackQuery.isDefined ⇒ Incoming.inline(u.callbackQuery.get)
     }.to(BotProcessor(script, interpreter(botOpInt))).run()
 
   override def shutdown(): Future[Unit] = Future.successful(())

@@ -14,7 +14,9 @@ case class Reply(text: String, meta: Incoming.Meta, forceReply: Boolean) extends
 
 case class Choose(text: String, variants: List[List[String]], chatId: Long) extends BotOp[Long]
 
-case class Inline(text: String, buttons: Seq[Seq[Inline.Button]], chatId: Long) extends BotOp[Long]
+case class Inline(text: String, buttons: Seq[Seq[Inline.Button]], chatId: Long, msgId: Option[Long]) extends BotOp[Long]
+
+case class InlineAnswer(text: Option[String], callbackId: String, chatId: Long) extends BotOp[Unit]
 
 object Inline {
   sealed trait Button {

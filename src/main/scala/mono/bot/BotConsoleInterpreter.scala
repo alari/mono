@@ -26,9 +26,13 @@ object BotConsoleInterpreter extends (BotOp ~> Task) {
     case LoadFile(_) ⇒
       Task.never[Path].map(_.asInstanceOf[A])
 
-    case Inline(text, inline, _) ⇒
+    case Inline(text, inline, _, _) ⇒
       println(text)
       inline.foreach(v ⇒ println("\t" + v.mkString("\t")))
       Task.now(mId.getAndIncrement().asInstanceOf[A])
+
+    case InlineAnswer(text, callbackId, _) ⇒
+      println(text)
+      Task.unit.asInstanceOf[Task[A]]
   }
 }

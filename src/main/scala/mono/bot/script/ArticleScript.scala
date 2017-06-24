@@ -30,6 +30,9 @@ class ArticleScript(implicit
 
   val showR = "show([0-9]+)".r
 
+  val publishR = "article:([0-9]+):publish".r
+  val draftR = "article:([0-9]+):draft".r
+
   override val scenario: Scenario = {
     case (ArticleContext(id), Plain(`Publish`, m)) ⇒
       for {
@@ -114,6 +117,28 @@ class ArticleScript(implicit
         } else showArticle(article.id, m)
 
       }
+
+    case (state, InlineCallback(publishR(id), callbackId, m)) ⇒
+      A.getById(id.toLong).flatMap { article ⇒
+        for {
+          a ← A.publishDraft(article.id)
+          _ ← As.tryPointTo(a.title, a, force = false)
+          _ ← B.answer(Some("Опубликовано"), callbackId)
+          buttons ← ArticleScript.articleContextButtons(a, m)
+          _ ← B.inline("", buttons, m.chat.id, Some(m.messageId))
+        } yield state
+      }
+
+    case (state, InlineCallback(draftR(id), callbackId, m)) ⇒
+      A.getById(id.toLong).flatMap { article ⇒
+        for {
+          a ← A.draftArticle(article.id)
+          _ ← As.tryPointTo(a.title, a, force = false)
+          _ ← B.answer(Some("Скрыто"), callbackId)
+          buttons ← ArticleScript.articleContextButtons(a, m)
+          _ ← B.inline("", buttons, m.chat.id, Some(m.messageId))
+        } yield state
+      }
   }
 }
 
@@ -147,6 +172,28 @@ object ArticleScript {
       _ ← B.say(s"# ${a.title}\n\n$t", meta)
     } yield ArticleContext(id)
 
+  def articleContextButtons(article: Article, meta: Incoming.Meta)(implicit
+    As: AliasOps[BotScript.Op],
+                                                                   B: BotOps[BotScript.Op],
+                                                                   E: EnvOps[BotScript.Op]): Free[BotScript.Op, Seq[Seq[Inline.Button]]] = for {
+    url ← As.aliasHref(article, article.id.toString)
+    host ← E.readHost()
+    token ← E.issueToken(
+      JwtClaim(
+        issuer = Some("telegram"),
+        subject = Some(meta.chat.id.toString),
+        audience = Some(Set(s"edit/${article.id}")),
+        issuedAt = Some(Instant.now().getEpochSecond)
+      )
+    )
+  } yield Seq(
+    Seq(
+      Inline.CallbackButton(if (article.draft) Publish else Hide, s"article:${article.id}:${if (article.draft) "publish" else "draft"}"),
+      Inline.UrlButton("Смотреть", url),
+      Inline.UrlButton("Редактировать", s"$host/edit/${article.id}?token=$token")
+    )
+  )
+
   def showArticleContext(article: Article, meta: Incoming.Meta)(implicit
     As: AliasOps[BotScript.Op],
                                                                 Au: AuthorOps[BotScript.Op],
@@ -159,24 +206,11 @@ object ArticleScript {
       _ ← current match {
         case Some(a) if a.id == article.authorId ⇒
           for {
-            host ← E.readHost()
-            token ← E.issueToken(
-              JwtClaim(
-                issuer = Some("telegram"),
-                subject = Some(meta.chat.id.toString),
-                audience = Some(Set(s"edit/${article.id}")),
-                issuedAt = Some(Instant.now().getEpochSecond)
-              )
-            )
+            buttons ← articleContextButtons(article, meta)
 
             _ ← B.inline(
               s"**${article.title}**",
-              Seq(
-                Seq(
-                  Inline.UrlButton("Смотреть", url),
-                  Inline.UrlButton("Редактировать", s"$host/edit/${article.id}?token=$token")
-                )
-              ),
+              buttons,
               meta.chat.id
             )
           } yield ()

@@ -1,6 +1,6 @@
 package mono.bot
 
-import info.mukel.telegrambot4s.models.Message
+import info.mukel.telegrambot4s.models.{ CallbackQuery, Message }
 
 abstract sealed class Incoming {
   val meta: Incoming.Meta
@@ -13,6 +13,8 @@ case class Command(name: String, tail: Option[String], meta: Incoming.Meta) exte
 case class File(id: String, mimeType: Option[String], name: Option[String], size: Option[Int], meta: Incoming.Meta) extends Incoming
 
 case class Image(fileId: String, caption: Option[String], meta: Incoming.Meta) extends Incoming
+
+case class InlineCallback(data: String, callbackId: String, meta: Incoming.Meta) extends Incoming
 
 case class Unknown(meta: Incoming.Meta) extends Incoming
 
@@ -31,6 +33,12 @@ object Incoming {
   )
 
   private val commandR = "/([a-zA-Z0-9]+)(@[^ ]+)?( .+)?".r
+
+  def inline(msg: CallbackQuery): Incoming = {
+    val c = Chat(msg.from.id, msg.from.username, Some(msg.from.firstName))
+    val m = Meta(msg.message.map(_.messageId).getOrElse(0), c, isUpdate = false)
+    msg.data.fold[Incoming](Unknown(m))(data ⇒ InlineCallback(data, msg.id, m))
+  }
 
   def telegram(msg: Message, isUpdate: Boolean = false): Incoming = {
     val c = Chat(msg.chat.id, msg.chat.username, msg.chat.title.orElse(msg.chat.firstName))
