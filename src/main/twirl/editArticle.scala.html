@@ -1,4 +1,4 @@
-@(article: mono.article.Article, text: String, errors: Map[String,List[String]])
+@(article: mono.article.Article, text: String, alias: Option[String], errors: Map[String,List[String]])
 
 <html>
     <head>
@@ -29,6 +29,13 @@
                     <legend>Год первой публикации</legend>
                     <input type="number" name="publishedAt" value="@{article.publishedAt}"/>
                     @errors.getOrElse("publishedAt", Nil).map {err =>
+                        <div>Error: @err</div>
+                    }
+                </fieldset>
+                <fieldset>
+                    <legend>Алиас</legend>
+                    <input type="text" name="alias" value="@{alias.getOrElse("")}"/>
+                    @errors.getOrElse("alias", Nil).map {err =>
                         <div>Error: @err</div>
                     }
                 </fieldset>

@@ -15,9 +15,10 @@ import monix.execution.Scheduler.Implicits.global
 import mono.env.EnvOps
 import play.twirl.api.Html
 import cats.implicits._
+import mono.alias.{ Alias, AliasOps, AliasPointer }
 import mono.image.{ Image, ImageOps }
 
-class WebArticle[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], E: EnvOps[F], Im: ImageOps[F]) extends Web[F] {
+class WebArticle[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], As: AliasOps[F], E: EnvOps[F], Im: ImageOps[F]) extends Web[F] {
 
   import WebArticle._
   import WebTokenCheck._
@@ -30,15 +31,16 @@ class WebArticle[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], E: EnvOps[F]
       get {
         editArticleHtml[F](articleId)
       } ~ (post & entity(as[FormData])) { d ⇒
-        update[F](articleId, d.fields.toMap, author).flatMap {
-          case Validated.Valid(a) ⇒
-            A.getText(articleId).map(text ⇒ html.editArticle(a, text, Map.empty))
+        val fields = d.fields.toMap
+        update[F](articleId, fields, author).flatMap {
+          case Validated.Valid((a, al)) ⇒
+            A.getText(articleId).map(text ⇒ html.editArticle(a, text, al.map(_.id), Map.empty))
 
           case Validated.Invalid(errs) ⇒
             for {
               article ← A.getById(articleId)
               text ← A.getText(articleId)
-            } yield html.editArticle(article, text, errs.toList.groupBy(_._1).mapValues(_.map(_._2)))
+            } yield html.editArticle(article, text, fields.get("alias"), errs.toList.groupBy(_._1).mapValues(_.map(_._2)))
 
         }
       }
@@ -87,18 +89,23 @@ object WebArticle {
       }.sequence
     }
 
-  def update[F[_]](articleId: Long, fields: Map[String, String], author: Author)(implicit A: ArticleOps[F]): Free[F, Validated[NonEmptyList[(String, String)], Article]] =
+  def update[F[_]](articleId: Long, fields: Map[String, String], author: Author)(implicit A: ArticleOps[F], As: AliasOps[F]): Free[F, Validated[NonEmptyList[(String, String)], (Article, Option[Alias])]] =
     for {
       article ← A.getById(articleId)
       aText ← updateText(article, fields.get("text"), author)
       aUp ← updateArticle(aText, fields, author)
-    } yield aUp
+      al ← fields.get("alias").map(_.trim).filter(_.nonEmpty) match {
+        case Some(alias) if aUp.isValid ⇒ As.tryPointTo(alias, article, force = true)
+        case _                          ⇒ As.findAlias(article)
+      }
+    } yield aUp.map(_ → al)
 
-  def editArticleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F]): Free[F, Html] =
+  def editArticleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F], As: AliasOps[F]): Free[F, Html] =
     for {
       article ← A.getById(articleId)
       text ← A.getText(articleId)
-    } yield html.editArticle(article, text, Map.empty)
+      alias ← As.findAlias(article)
+    } yield html.editArticle(article, text, alias.map(_.id), Map.empty)
 
   def articleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F], Au: AuthorOps[F], Im: ImageOps[F]): Free[F, Html] =
     for {
