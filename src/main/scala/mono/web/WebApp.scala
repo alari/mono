@@ -7,7 +7,7 @@ import akka.stream.Materializer
 import cats.~>
 import monix.eval.Task
 import mono.article.ArticleOps
-import mono.author.AuthorOps
+import mono.person.PersonOps
 import akka.http.scaladsl.server.Directives._
 import mono.alias.AliasOps
 import mono.env.EnvOps
@@ -15,7 +15,7 @@ import mono.image.ImageOps
 
 import scala.language.higherKinds
 
-class WebApp[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], As: AliasOps[F], Im: ImageOps[F], E: EnvOps[F]) extends Web[F] {
+class WebApp[F[_]](implicit A: ArticleOps[F], Au: PersonOps[F], As: AliasOps[F], Im: ImageOps[F], E: EnvOps[F]) extends Web[F] {
 
   override def route(implicit i: F ~> Task): Route =
     new WebArticle[F].route ~

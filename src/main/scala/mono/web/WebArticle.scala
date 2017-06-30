@@ -8,7 +8,7 @@ import cats.free.Free
 import cats.~>
 import monix.eval.Task
 import mono.article.{ Article, ArticleOps }
-import mono.author.{ Author, AuthorOps }
+import mono.person.{ Person, PersonOps }
 
 import scala.language.higherKinds
 import monix.execution.Scheduler.Implicits.global
@@ -18,7 +18,7 @@ import cats.implicits._
 import mono.alias.{ Alias, AliasOps, AliasPointer }
 import mono.image.{ Image, ImageOps }
 
-class WebArticle[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], As: AliasOps[F], E: EnvOps[F], Im: ImageOps[F]) extends Web[F] {
+class WebArticle[F[_]](implicit A: ArticleOps[F], Au: PersonOps[F], As: AliasOps[F], E: EnvOps[F], Im: ImageOps[F]) extends Web[F] {
 
   import WebArticle._
   import WebTokenCheck._
@@ -52,7 +52,7 @@ class WebArticle[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], As: AliasOps
 }
 
 object WebArticle {
-  def updateText[F[_]](article: Article, text: Option[String], author: Author)(implicit A: ArticleOps[F]): Free[F, Article] =
+  def updateText[F[_]](article: Article, text: Option[String], author: Person)(implicit A: ArticleOps[F]): Free[F, Article] =
     text.map(_.trim) match {
       case Some(value) ⇒
         A.getText(article.id).flatMap {
@@ -65,7 +65,7 @@ object WebArticle {
         Free.pure(article)
     }
 
-  def updateArticle[F[_]](article: Article, fields: Map[String, String], author: Author)(implicit A: ArticleOps[F]): Free[F, Validated[NonEmptyList[(String, String)], Article]] =
+  def updateArticle[F[_]](article: Article, fields: Map[String, String], author: Person)(implicit A: ArticleOps[F]): Free[F, Validated[NonEmptyList[(String, String)], Article]] =
     {
       type V[T] = Validated[NonEmptyList[(String, String)], T]
 
@@ -89,7 +89,7 @@ object WebArticle {
       }.sequence
     }
 
-  def update[F[_]](articleId: Long, fields: Map[String, String], author: Author)(implicit A: ArticleOps[F], As: AliasOps[F]): Free[F, Validated[NonEmptyList[(String, String)], (Article, Option[Alias])]] =
+  def update[F[_]](articleId: Long, fields: Map[String, String], author: Person)(implicit A: ArticleOps[F], As: AliasOps[F]): Free[F, Validated[NonEmptyList[(String, String)], (Article, Option[Alias])]] =
     for {
       article ← A.getById(articleId)
       aText ← updateText(article, fields.get("text"), author)
@@ -107,7 +107,7 @@ object WebArticle {
       alias ← As.findAlias(article)
     } yield html.editArticle(article, text, alias.map(_.id), Map.empty)
 
-  def articleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F], Au: AuthorOps[F], Im: ImageOps[F]): Free[F, Html] =
+  def articleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F], Au: PersonOps[F], Im: ImageOps[F]): Free[F, Html] =
     for {
       article ← A.getById(articleId)
       text ← A.getText(articleId)
@@ -118,7 +118,7 @@ object WebArticle {
       }
     } yield html.article(article, text, author, cover)
 
-  def articlesHtml[F[_]](offset: Int, limit: Int, authorId: Option[Long], q: Option[String])(implicit A: ArticleOps[F], Au: AuthorOps[F]): Free[F, Html] =
+  def articlesHtml[F[_]](offset: Int, limit: Int, authorId: Option[Long], q: Option[String])(implicit A: ArticleOps[F], Au: PersonOps[F]): Free[F, Html] =
     for {
       articles ← A.fetch(authorId, q, offset, limit)
       authors ← Au.getByIds(articles.values.map(_.authorId).toSet)

@@ -5,7 +5,7 @@ import java.time.Instant
 import cats.free.Free
 import mono.alias.AliasOps
 import mono.article.{ Article, ArticleOps }
-import mono.author.AuthorOps
+import mono.person.PersonOps
 import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot.BotState.{ ArticleContentContext, ArticleContext, ArticleDescriptionContext, ArticleTitleContext }
 import mono.bot._
@@ -22,7 +22,7 @@ class ArticleScript(implicit
   B: BotOps[BotScript.Op],
                     A:  ArticleOps[BotScript.Op],
                     As: AliasOps[BotScript.Op],
-                    Au: AuthorOps[BotScript.Op],
+                    Au: PersonOps[BotScript.Op],
                     Im: ImageOps[BotScript.Op],
                     E:  EnvOps[BotScript.Op]) extends Script {
 
@@ -196,7 +196,7 @@ object ArticleScript {
 
   def showArticleContext(article: Article, meta: Incoming.Meta)(implicit
     As: AliasOps[BotScript.Op],
-                                                                Au: AuthorOps[BotScript.Op],
+                                                                Au: PersonOps[BotScript.Op],
                                                                 B:  BotOps[BotScript.Op],
                                                                 E:  EnvOps[BotScript.Op]): Free[BotScript.Op, BotState] =
     for {

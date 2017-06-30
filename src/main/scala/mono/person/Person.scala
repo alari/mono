@@ -1,12 +1,12 @@
-package mono.author
+package mono.person
 
 import java.time.Instant
 
-case class Author(
+case class Person(
   id:         Long,
   telegramId: Long,
 
-  title: String,
+  name: String,
 
   createdAt: Instant
 )

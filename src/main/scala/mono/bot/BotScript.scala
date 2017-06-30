@@ -6,7 +6,7 @@ import cats.syntax.monoid._
 import mono.Interpret
 import mono.alias.AliasOps
 import mono.article.ArticleOps
-import mono.author.AuthorOps
+import mono.person.PersonOps
 import mono.bot.script.Script._
 import mono.bot.script._
 import mono.env.EnvOps
@@ -19,7 +19,7 @@ object BotScript {
   def apply()(implicit
     B: BotOps[BotScript.Op],
               A:  ArticleOps[BotScript.Op],
-              Au: AuthorOps[BotScript.Op],
+              Au: PersonOps[BotScript.Op],
               Ao: AliasOps[BotScript.Op],
               E:  EnvOps[BotScript.Op]): (BotState, Incoming) ⇒ Free[Op, BotState] = {
 

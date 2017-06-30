@@ -1,10 +1,10 @@
 package mono.bot.script
 
 import cats.free.Free
-import mono.alias.AliasPointer.Author
+import mono.alias.AliasPointer.Person
 import mono.alias.{ AliasOps, AliasPointer }
 import mono.article.{ ArticleOps, Articles }
-import mono.author.AuthorOps
+import mono.person.PersonOps
 import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot._
 import mono.bot.BotState.{ FetchingArticles, Idle }
@@ -30,7 +30,7 @@ object FetchArticlesScript {
   // TODO: сделать красиво
   def fetch(authorId: Option[Long], q: Option[String], offset: Int, limit: Int, m: Incoming.Meta)(implicit
     B: BotOps[BotScript.Op],
-                                                                                                  Au: AuthorOps[BotScript.Op],
+                                                                                                  Au: PersonOps[BotScript.Op],
                                                                                                   As: AliasOps[BotScript.Op],
                                                                                                   A:  ArticleOps[BotScript.Op],
                                                                                                   E:  EnvOps[BotScript.Op]): Free[BotScript.Op, BotState] = for {
@@ -41,7 +41,7 @@ object FetchArticlesScript {
     host ← E.readHost()
 
     _ ← B.say(articles.map(a ⇒
-      s"""**${a.title}** - _${authors(a.authorId).title}_\n\t/show${a.id}\t[$host/${aliases.get(a).fold(a.id.toString)(_.id)}]""").mkString("\n\n"), m.chat.id)
+      s"""**${a.title}** - _${authors(a.authorId).name}_\n\t/show${a.id}\t[$host/${aliases.get(a).fold(a.id.toString)(_.id)}]""").mkString("\n\n"), m.chat.id)
     _ ← if (count > offset + limit) B.say(s"Осталось: ${count - offset - limit}", m) else B.say("Всё!", m)
   } yield (if (count > offset + limit)
     FetchingArticles(offset, limit, count)

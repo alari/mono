@@ -7,14 +7,14 @@ import cats.~>
 import monix.cats._
 import monix.eval.Task
 import monix.execution.Scheduler
-import mono.author.{ Author, AuthorOps }
+import mono.person.{ Person, PersonOps }
 import mono.env.EnvOps
 
 import scala.language.higherKinds
 
 object WebTokenCheck {
 
-  def checkToken[F[_]](action: String)(implicit Au: AuthorOps[F], E: EnvOps[F], i: F ~> Task, s: Scheduler): Directive1[Author] =
+  def checkToken[F[_]](action: String)(implicit Au: PersonOps[F], E: EnvOps[F], i: F ~> Task, s: Scheduler): Directive1[Person] =
     parameter('token).flatMap { token ⇒
       onSuccess((for {
         claim ← E.parseToken(token)
@@ -22,7 +22,7 @@ object WebTokenCheck {
           case Some(c) if c.issuer.contains("telegram") && c.audience.exists(_.contains(action)) && c.subject.isDefined ⇒
             Au.findByTelegramId(c.subject.get.toLong)
           case v ⇒
-            Free.pure[F, Option[Author]](None)
+            Free.pure[F, Option[Person]](None)
         }
       } yield authorOpt).foldMap(i).runAsync).flatMap {
         case Some(a) ⇒

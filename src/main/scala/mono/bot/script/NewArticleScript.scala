@@ -5,7 +5,7 @@ import java.time.Instant
 import cats.free.Free
 import mono.alias.{ Alias, AliasOps }
 import mono.article.{ Article, ArticleOps }
-import mono.author.AuthorOps
+import mono.person.PersonOps
 import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot.BotState.{ ArticleContext, Idle, InitNewArticle }
 import mono.bot._
@@ -14,7 +14,7 @@ import ArticleScript.showArticleContext
 class NewArticleScript(implicit
   B: BotOps[BotScript.Op],
                        A:  ArticleOps[BotScript.Op],
-                       Au: AuthorOps[BotScript.Op],
+                       Au: PersonOps[BotScript.Op],
                        As: AliasOps[BotScript.Op]) extends Script {
   def createArticle(title: String, m: Incoming.Meta): Free[BotScript.Op, Article] =
     for {
@@ -50,6 +50,6 @@ object NewArticleScript {
   def apply()(implicit
     B: BotOps[Op],
               A:  ArticleOps[Op],
-              Au: AuthorOps[Op],
+              Au: PersonOps[Op],
               Ao: AliasOps[Op]): Script = new NewArticleScript
 }

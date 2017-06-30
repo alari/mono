@@ -1,4 +1,4 @@
-package mono.author
+package mono.person
 
 import java.time.Instant
 
@@ -7,25 +7,25 @@ import monix.eval.Task
 
 import scala.collection.concurrent.TrieMap
 
-class AuthorsInMemoryInterpreter extends (AuthorOp ~> Task) {
-  private val stateById = TrieMap.empty[Long, Author]
+class PersonsInMemoryInterpreter extends (PersonOp ~> Task) {
+  private val stateById = TrieMap.empty[Long, Person]
 
-  override def apply[A](fa: AuthorOp[A]): Task[A] = fa match {
-    case EnsureTelegramAuthor(telegramId, title) ⇒
-      Task.now(stateById.getOrElseUpdate(telegramId, Author(
+  override def apply[A](fa: PersonOp[A]): Task[A] = fa match {
+    case EnsureTelegramPerson(telegramId, title) ⇒
+      Task.now(stateById.getOrElseUpdate(telegramId, Person(
         telegramId,
         telegramId,
         title,
         Instant.now()
       )).asInstanceOf[A])
 
-    case GetAuthorById(id) ⇒
+    case GetPersonById(id) ⇒
       Task.now(stateById(id).asInstanceOf[A])
 
-    case GetAuthorsByIds(ids) ⇒
+    case GetPersonsByIds(ids) ⇒
       Task.now(ids.toList.flatMap(stateById.get).map(a ⇒ a.id → a).toMap.asInstanceOf[A])
 
-    case FindAuthorByTelegramId(telegramId) ⇒
+    case FindPersonByTelegramId(telegramId) ⇒
       Task.now(stateById.values.find(_.telegramId == telegramId).asInstanceOf[A])
   }
 }

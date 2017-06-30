@@ -13,51 +13,10 @@ import scala.io.StdIn
 import scala.language.higherKinds
 import scala.util.Try
 
-/*
-- хранение
- - сделать постгрес
-
-- отверстать статьи и ленту
-
-- сделать единый протокол ошибок, чтобы был ValidatedNel[новая ошибка, T] везде
-
-- загрузка картинок к статье (с инлайн кнопкой поставить/убрать обложкой)
-
-- ci/cd
-
-- перенести мирари
-  - проконтролировать перенос дат создания
-
-- сделать спецблоки (ютуба хватит)
-
-- распространение
- - сайтмап
- - дзен
- - атом
- - рсс
-
-- предпросмотр при редактировании
-  - поддержка маркдаун вообще
-  - клиентская и серверная
-  - жаваскрипт, ажакс
-  - вообще электрон
-
-- подписки
-  - слать всё впервые опубликованное всем в боте
-  - подписки на конкретных авторов
-
-- клиент в электроне
- - список черновиков
- - список публикаций
- - редактирование только текста + метаданных
-
-- всякие группы, каналы, сериалы, теги (их на уровне постгреса, как и поиск)
- */
-
 object MonoApp extends App with MonixToCatsConversions {
   println("hello mono")
 
-  implicit val interpret: Interpret.Op ~> Task = Interpret.inMemory
+  implicit val interpret: Interpret.Op ~> Task = Interpret.inPostgres
 
   implicit val system = ActorSystem("mono")
   implicit val mat = ActorMaterializer()

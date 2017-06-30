@@ -5,7 +5,7 @@ import cats.~>
 import monix.eval.Task
 import mono.alias.{ Alias, AliasOps, AliasPointer }
 import mono.article.ArticleOps
-import mono.author.AuthorOps
+import mono.person.PersonOps
 import Directives._
 import monix.execution.Scheduler.Implicits.global
 import mono.image.ImageOps
@@ -13,7 +13,7 @@ import mono.image.ImageOps
 import scala.language.higherKinds
 import scala.util.{ Failure, Success }
 
-class WebAlias[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], Im: ImageOps[F], As: AliasOps[F]) extends Web[F] {
+class WebAlias[F[_]](implicit A: ArticleOps[F], Au: PersonOps[F], Im: ImageOps[F], As: AliasOps[F]) extends Web[F] {
 
   def resolveAlias(implicit i: F ~> Task): Directive1[Alias] =
     path(Segment).flatMap(id ⇒
@@ -27,7 +27,7 @@ class WebAlias[F[_]](implicit A: ArticleOps[F], Au: AuthorOps[F], Im: ImageOps[F
       case AliasPointer.Article(id) ⇒
         WebArticle.articleHtml[F](id)
 
-      case AliasPointer.Author(id) ⇒
+      case AliasPointer.Person(id) ⇒
         parameters('offset.as[Int] ? 0, 'limit.as[Int] ? 10, 'q.?) { (o, l, q) ⇒
           WebArticle.articlesHtml[F](o, l, Some(id), q)
         }
