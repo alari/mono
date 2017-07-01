@@ -23,10 +23,10 @@ class WebArticle[F[_]](implicit A: ArticleOps[F], Au: PersonOps[F], As: AliasOps
   import WebArticle._
   import WebTokenCheck._
 
-  override def route(implicit i: F ~> Task): Route = path(LongNumber) { articleId ⇒
+  override def route(implicit i: F ~> Task): Route = path(IntNumber) { articleId ⇒
     // TODO: check permissions
     articleHtml[F](articleId)
-  } ~ path("edit" / LongNumber){ articleId ⇒
+  } ~ path("edit" / IntNumber){ articleId ⇒
     checkToken[F](s"edit/" + articleId).apply { author ⇒
       get {
         editArticleHtml[F](articleId)
@@ -45,7 +45,7 @@ class WebArticle[F[_]](implicit A: ArticleOps[F], Au: PersonOps[F], As: AliasOps
         }
       }
     }
-  } ~ (pathEndOrSingleSlash & parameters('offset.as[Int] ? 0, 'limit.as[Int] ? 10, 'authorId.as[Long].?, 'q.?)) { (o, l, a, q) ⇒
+  } ~ (pathEndOrSingleSlash & parameters('offset.as[Int] ? 0, 'limit.as[Int] ? 10, 'authorId.as[Int].?, 'q.?)) { (o, l, a, q) ⇒
     articlesHtml(o, l, a, q)
   }
 
@@ -76,20 +76,28 @@ object WebArticle {
       def readStringOpt(name: String): V[Option[String]] =
         Validated.valid[NonEmptyList[(String, String)], Option[String]](fields.get(name))
 
+      def readIntOpt(name: String): V[Option[Int]] =
+        readStringOpt(name).andThen{
+          case Some(s) ⇒
+            Validated.catchOnly[NumberFormatException](Some(s.toInt)).leftMap(e ⇒ NonEmptyList.of(name → e.getMessage))
+          case None ⇒
+            None.validNel
+        }
+
       def readInt(name: String): V[Int] =
         readString(name)
           .andThen(s ⇒
             Validated.catchOnly[NumberFormatException](s.toInt).leftMap(e ⇒ NonEmptyList.of(name → e.getMessage)))
 
-      (readString("title") |@| readStringOpt("headline") |@| readInt("publishedAt")).map { (title, headline, publishedAt) ⇒
+      (readString("title") |@| readStringOpt("headline") |@| readIntOpt("publishedAt")).map { (title, headline, publishedAt) ⇒
         if (article.title != title ||
           article.headline != headline ||
-          article.publishedAt != publishedAt) A.update(article.id, title, headline, publishedAt)
+          article.publishedYear != publishedAt) A.update(article.id, title, headline, publishedAt)
         else Free.pure[F, Article](article)
       }.sequence
     }
 
-  def update[F[_]](articleId: Long, fields: Map[String, String], author: Person)(implicit A: ArticleOps[F], As: AliasOps[F]): Free[F, Validated[NonEmptyList[(String, String)], (Article, Option[Alias])]] =
+  def update[F[_]](articleId: Int, fields: Map[String, String], author: Person)(implicit A: ArticleOps[F], As: AliasOps[F]): Free[F, Validated[NonEmptyList[(String, String)], (Article, Option[Alias])]] =
     for {
       article ← A.getById(articleId)
       aText ← updateText(article, fields.get("text"), author)
@@ -100,27 +108,27 @@ object WebArticle {
       }
     } yield aUp.map(_ → al)
 
-  def editArticleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F], As: AliasOps[F]): Free[F, Html] =
+  def editArticleHtml[F[_]](articleId: Int)(implicit A: ArticleOps[F], As: AliasOps[F]): Free[F, Html] =
     for {
       article ← A.getById(articleId)
       text ← A.getText(articleId)
       alias ← As.findAlias(article)
     } yield html.editArticle(article, text, alias.map(_.id), Map.empty)
 
-  def articleHtml[F[_]](articleId: Long)(implicit A: ArticleOps[F], Au: PersonOps[F], Im: ImageOps[F]): Free[F, Html] =
+  def articleHtml[F[_]](articleId: Int)(implicit A: ArticleOps[F], Au: PersonOps[F], Im: ImageOps[F]): Free[F, Html] =
     for {
       article ← A.getById(articleId)
       text ← A.getText(articleId)
-      author ← Au.getById(article.authorId)
+      author ← Au.getById(article.authorIds.head) // TODO: show all authors
       cover ← article.coverId match {
         case Some(coverId) ⇒ Im.find(coverId)
         case None          ⇒ Free.pure[F, Option[Image]](None)
       }
     } yield html.article(article, text, author, cover)
 
-  def articlesHtml[F[_]](offset: Int, limit: Int, authorId: Option[Long], q: Option[String])(implicit A: ArticleOps[F], Au: PersonOps[F]): Free[F, Html] =
+  def articlesHtml[F[_]](offset: Int, limit: Int, authorId: Option[Int], q: Option[String])(implicit A: ArticleOps[F], Au: PersonOps[F]): Free[F, Html] =
     for {
       articles ← A.fetch(authorId, q, offset, limit)
-      authors ← Au.getByIds(articles.values.map(_.authorId).toSet)
+      authors ← Au.getByIds(articles.values.flatMap(_.authorIds.toList).toSet)
     } yield html.articles(articles, authors)
 }

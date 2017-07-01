@@ -5,38 +5,38 @@ import java.time.Instant
 sealed trait ArticleOp[T]
 
 case class CreateArticle(
-  authorId:  Long,
+  authorId:  Int,
   title:     String,
   createdAt: Instant
 ) extends ArticleOp[Article]
 
 case class FetchArticles(
-  authorId: Option[Long],
+  authorId: Option[Int],
   q:        Option[String],
   offset:   Int,
   limit:    Int
 ) extends ArticleOp[Articles]
 
 case class FetchDrafts(
-  authorId: Long,
+  authorId: Int,
   offset:   Int,
   limit:    Int
 ) extends ArticleOp[Articles]
 
-case class PublishDraft(id: Long) extends ArticleOp[Article]
+case class PublishDraft(id: Int) extends ArticleOp[Article]
 
-case class DraftArticle(id: Long) extends ArticleOp[Article]
+case class DraftArticle(id: Int) extends ArticleOp[Article]
 
-case class GetArticleById(id: Long) extends ArticleOp[Article]
+case class GetArticleById(id: Int) extends ArticleOp[Article]
 
-case class GetText(id: Long) extends ArticleOp[String]
+case class GetText(id: Int) extends ArticleOp[String]
 
-case class SetText(id: Long, text: String) extends ArticleOp[String]
+case class SetText(id: Int, text: String) extends ArticleOp[String]
 
-case class UpdateArticle(id: Long, title: String, headline: Option[String], publishedAt: Int) extends ArticleOp[Article]
+case class UpdateArticle(id: Int, title: String, headline: Option[String], publishedYear: Option[Int]) extends ArticleOp[Article]
 
-case class SetTitle(id: Long, text: String) extends ArticleOp[Article]
+case class SetTitle(id: Int, text: String) extends ArticleOp[Article]
 
-case class SetHeadline(id: Long, text: Option[String]) extends ArticleOp[Article]
+case class SetHeadline(id: Int, text: Option[String]) extends ArticleOp[Article]
 
-case class SetCover(id: Long, coverId: Option[Long]) extends ArticleOp[Article]
+case class SetCover(id: Int, coverId: Option[Int]) extends ArticleOp[Article]

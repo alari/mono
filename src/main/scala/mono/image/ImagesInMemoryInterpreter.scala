@@ -1,7 +1,7 @@
 package mono.image
 
 import java.nio.file.{ Files, Path }
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicInteger
 
 import cats.~>
 import monix.eval.Task
@@ -9,8 +9,8 @@ import monix.eval.Task
 import scala.collection.concurrent.TrieMap
 
 class ImagesInMemoryInterpreter extends (ImageOp ~> Task) {
-  private val cache = TrieMap.empty[Long, (Image, Path)]
-  private val id = new AtomicLong(0)
+  private val cache = TrieMap.empty[Int, (Image, Path)]
+  private val id = new AtomicInteger(0)
 
   private val tmpDir = Files.createTempDirectory("images")
 

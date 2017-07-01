@@ -12,7 +12,7 @@ import fs2.interop.cats._
 
 object ImagesDoobieInterpreter {
   val createTable: Update0 =
-    sql"CREATE TABLE  IF NOT EXISTS images(id SERIAL, hash VARCHAR(32) NOT NULL, size INTEGER NOT NULL, person_id INTEGER REFERENCES persons NOT NULL, created_at TIMESTAMP, sub_type VARCHAR(16) NOT NULL, caption VARCHAR(512), width INTEGER, height INTEGER)".update
+    sql"CREATE TABLE  IF NOT EXISTS images(id SERIAL PRIMARY KEY, hash VARCHAR(32) NOT NULL, size BIGINT NOT NULL, person_id INTEGER REFERENCES persons NOT NULL, created_at TIMESTAMP, sub_type VARCHAR(16) NOT NULL, caption VARCHAR(512), width INTEGER, height INTEGER)".update
 
   val createHashIndex: Update0 =
     sql"CREATE INDEX IF NOT EXISTS images_hash_idx ON images USING HASH(hash)".update
@@ -20,7 +20,7 @@ object ImagesDoobieInterpreter {
   def init(xa: Transactor[Task]): Task[Int] =
     (createTable.run *> createHashIndex.run).transact(xa)
 
-  def insertImageQuery(image: Image): ConnectionIO[Long] =
+  def insertImageQuery(image: Image): ConnectionIO[Int] =
     {
       import image._
       sql"INSERT INTO images(hash,size,person_id,created_at,sub_type,caption,width,height) VALUES($hash,$size,$personId,$createdAt,$subType,$caption,$width,$height)"

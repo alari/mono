@@ -19,7 +19,7 @@ class WebImage[F[_]](implicit Im: ImageOps[F]) extends Web[F] {
 
   override def route(implicit i: F ~> Task): Route =
     pathPrefix("image") {
-      path(LongNumber) { imageId ⇒
+      path(IntNumber) { imageId ⇒
         // TODO: send cache headers
         onSuccess((for {
           im ← Im.find(imageId)

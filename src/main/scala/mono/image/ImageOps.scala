@@ -9,11 +9,11 @@ import scala.language.higherKinds
 
 class ImageOps[F[_]](implicit I: Inject[ImageOp, F]) {
   def store(
-    userId: Long, file: Path, caption: Option[String]
+    userId: Int, file: Path, caption: Option[String]
   ): Free[F, Either[String, Image]] =
     inject[ImageOp, F](StoreImage(userId, file, caption))
 
-  def find(imageId: Long): Free[F, Option[Image]] =
+  def find(imageId: Int): Free[F, Option[Image]] =
     inject[ImageOp, F](FindImage(imageId))
 
   def getFile(image: Image): Free[F, Path] =

@@ -36,12 +36,12 @@ object FetchArticlesScript {
                                                                                                   E:  EnvOps[BotScript.Op]): Free[BotScript.Op, BotState] = for {
     as ← A.fetch(None, None, offset, limit)
     Articles(articles, count) = as
-    authors ← Au.getByIds(articles.map(_.authorId).toSet)
+    authors ← Au.getByIds(articles.flatMap(_.authorIds.toList).toSet)
     aliases ← As.findAliases(articles.map(a ⇒ a: AliasPointer): _*)
     host ← E.readHost()
 
     _ ← B.say(articles.map(a ⇒
-      s"""**${a.title}** - _${authors(a.authorId).name}_\n\t/show${a.id}\t[$host/${aliases.get(a).fold(a.id.toString)(_.id)}]""").mkString("\n\n"), m.chat.id)
+      s"""**${a.title}** - _${a.authorIds.toList.map(authors).map(_.name).mkString("_, _")}_\n\t/show${a.id}\t[$host/${aliases.get(a).fold(a.id.toString)(_.id)}]""").mkString("\n\n"), m.chat.id)
     _ ← if (count > offset + limit) B.say(s"Осталось: ${count - offset - limit}", m) else B.say("Всё!", m)
   } yield (if (count > offset + limit)
     FetchingArticles(offset, limit, count)

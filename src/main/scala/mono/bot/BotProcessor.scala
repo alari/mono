@@ -50,8 +50,8 @@ object BotProcessor extends MonixToCatsConversions {
           case Success(Right(v)) ⇒
             Task.now(v)
           case Failure(f) ⇒
-            log.warn(s"Performing a chat action failed on $i", f)
-            Task.raiseError(f)
+            log.error(s"Performing a chat action failed on $i", f)
+            current
         }
 
         if (!i.meta.isUpdate) state(i.meta.chat.id) = ran

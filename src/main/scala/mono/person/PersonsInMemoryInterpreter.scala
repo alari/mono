@@ -8,12 +8,12 @@ import monix.eval.Task
 import scala.collection.concurrent.TrieMap
 
 class PersonsInMemoryInterpreter extends (PersonOp ~> Task) {
-  private val stateById = TrieMap.empty[Long, Person]
+  private val stateById = TrieMap.empty[Int, Person]
 
   override def apply[A](fa: PersonOp[A]): Task[A] = fa match {
     case EnsureTelegramPerson(telegramId, title) ⇒
-      Task.now(stateById.getOrElseUpdate(telegramId, Person(
-        telegramId,
+      Task.now(stateById.getOrElseUpdate(telegramId.toInt, Person(
+        telegramId.toInt,
         telegramId,
         title,
         Instant.now()

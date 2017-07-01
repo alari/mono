@@ -2,6 +2,8 @@ package mono.article
 
 import java.time.Instant
 
+import cats.data.NonEmptyList
+
 import scala.language.higherKinds
 
 /*
@@ -28,17 +30,19 @@ import scala.language.higherKinds
  */
 
 case class Article(
-  id:       Long,
-  authorId: Long,
+  id:        Int,
+  authorIds: NonEmptyList[Int],
 
   title:    String,
   headline: Option[String],
 
-  coverId: Option[Long],
+  coverId:  Option[Int],
+  imageIds: List[Int],
 
-  createdAt:   Instant,
-  modifiedAt:  Instant,
-  publishedAt: Int,
+  createdAt:  Instant,
+  modifiedAt: Instant,
+
+  publishedYear: Option[Int],
 
   version: Int,
 

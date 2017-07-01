@@ -28,10 +28,10 @@ class ArticleScript(implicit
 
   import ArticleScript._
 
-  val showR = "show([0-9]+)".r
+  private val showR = "show([0-9]+)".r
 
-  val publishR = "article:([0-9]+):publish".r
-  val draftR = "article:([0-9]+):draft".r
+  private val publishR = "article:([0-9]+):publish".r
+  private val draftR = "article:([0-9]+):draft".r
 
   override val scenario: Scenario = {
     case (ArticleContext(id), Plain(`Publish`, m)) ⇒
@@ -109,7 +109,7 @@ class ArticleScript(implicit
       } yield s
 
     case (state, Command(showR(id), _, m)) ⇒
-      A.getById(id.toLong).flatMap{ article ⇒
+      A.getById(id.toInt).flatMap{ article ⇒
         if (article.draft) {
           for {
             _ ← B.reply("Статья не найдена", m)
@@ -119,7 +119,7 @@ class ArticleScript(implicit
       }
 
     case (state, InlineCallback(publishR(id), callbackId, m)) ⇒
-      A.getById(id.toLong).flatMap { article ⇒
+      A.getById(id.toInt).flatMap { article ⇒
         for {
           a ← A.publishDraft(article.id)
           _ ← As.tryPointTo(a.title, a, force = false)
@@ -130,7 +130,7 @@ class ArticleScript(implicit
       }
 
     case (state, InlineCallback(draftR(id), callbackId, m)) ⇒
-      A.getById(id.toLong).flatMap { article ⇒
+      A.getById(id.toInt).flatMap { article ⇒
         for {
           a ← A.draftArticle(article.id)
           _ ← As.tryPointTo(a.title, a, force = false)
@@ -163,9 +163,9 @@ object ArticleScript {
       }).mkString("\n").trim
     } yield (changeTitle, text)
 
-  def showArticle(id: Long, meta: Incoming.Meta)(implicit
+  def showArticle(id: Int, meta: Incoming.Meta)(implicit
     A: ArticleOps[BotScript.Op],
-                                                 B: BotOps[BotScript.Op]): Free[BotScript.Op, BotState] =
+                                                B: BotOps[BotScript.Op]): Free[BotScript.Op, BotState] =
     for {
       a ← A.getById(id)
       t ← A.getText(id)
@@ -204,7 +204,7 @@ object ArticleScript {
       current ← Au.findByTelegramId(meta.chat.id)
 
       _ ← current match {
-        case Some(a) if a.id == article.authorId ⇒
+        case Some(a) if article.authorIds.toList.contains(a.id) ⇒
           for {
             buttons ← articleContextButtons(article, meta)
 

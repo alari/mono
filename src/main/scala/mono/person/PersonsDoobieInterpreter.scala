@@ -9,20 +9,20 @@ import cats.data._, cats.implicits._
 import fs2.interop.cats._
 
 object PersonsDoobieInterpreter {
-  val createTable: Update0 = sql"CREATE TABLE IF NOT EXISTS persons(id SERIAL, telegram_id INTEGER, name TEXT NOT NULL, created_at TIMESTAMP)".update
-  val createTelegramIdIndex: Update0 = sql"CREATE UNIQUE INDEX IF NOT EXISTS persons_telegram_id_uindex ON persons (telegram_id)".update
+  val createTable: Update0 =
+    sql"CREATE TABLE IF NOT EXISTS persons(id SERIAL PRIMARY KEY, telegram_id BIGINT, name TEXT NOT NULL, created_at TIMESTAMP)".update
+
+  val createTelegramIdIndex: Update0 =
+    sql"CREATE UNIQUE INDEX IF NOT EXISTS persons_telegram_id_uindex ON persons (telegram_id)".update
 
   def init(xa: Transactor[Task]): Task[Int] =
     (createTable.run *> createTelegramIdIndex.run).transact(xa)
-}
 
-class PersonsDoobieInterpreter(xa: Transactor[Task]) extends (PersonOp ~> Task) {
-
-  def getPersonByIdQuery(id: Long): Query0[Person] =
+  def getPersonByIdQuery(id: Int): Query0[Person] =
     sql"SELECT id, telegram_id, name, created_at FROM persons WHERE id = $id"
       .query[Person]
 
-  def getPersonsByIdsQuery(ids: NonEmptyList[Long]): Query0[Person] =
+  def getPersonsByIdsQuery(ids: NonEmptyList[Int]): Query0[Person] =
     (sql"SELECT id, telegram_id, name, created_at FROM persons WHERE " ++ Fragments.in(fr"id", ids))
       .query[Person]
 
@@ -33,6 +33,11 @@ class PersonsDoobieInterpreter(xa: Transactor[Task]) extends (PersonOp ~> Task) 
   def insertPersonQuery(telegramId: Long, name: String, createdAt: Instant): ConnectionIO[Person] =
     sql"INSERT INTO persons(telegram_id, name, created_at) VALUES ($telegramId, $name, $createdAt)"
       .update.withUniqueGeneratedKeys("id", "telegram_id", "name", "created_at")
+}
+
+class PersonsDoobieInterpreter(xa: Transactor[Task]) extends (PersonOp ~> Task) {
+
+  import PersonsDoobieInterpreter._
 
   override def apply[A](fa: PersonOp[A]): Task[A] = fa match {
     case EnsureTelegramPerson(telegramId, name) ⇒
@@ -52,7 +57,7 @@ class PersonsDoobieInterpreter(xa: Transactor[Task]) extends (PersonOp ~> Task) 
 
     case GetPersonsByIds(ids) ⇒
       NonEmptyList.fromList(ids.toList)
-        .fold(Task.now(Map.empty[Long, Person]))(idsNel ⇒
+        .fold(Task.now(Map.empty[Int, Person]))(idsNel ⇒
           getPersonsByIdsQuery(idsNel).to[Seq].transact(xa)
             .map(_.map(a ⇒ (a.id, a)).toMap)).asInstanceOf[Task[A]]
 

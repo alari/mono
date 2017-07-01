@@ -3,7 +3,7 @@ package mono.person
 import java.time.Instant
 
 case class Person(
-  id:         Long,
+  id:         Int,
   telegramId: Long,
 
   name: String,

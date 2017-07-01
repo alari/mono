@@ -1,7 +1,7 @@
 package mono.image
 
 import java.io.FileInputStream
-import java.nio.file.{ Files, Path, Paths }
+import java.nio.file.{ Files, Path }
 import java.security.MessageDigest
 import java.time.Instant
 import javax.imageio.ImageIO
@@ -11,11 +11,11 @@ import monix.eval.Task
 import scala.util.Try
 
 case class Image(
-    id:   Long,
+    id:   Int,
     hash: String,
     size: Long,
 
-    personId: Long,
+    personId: Int,
 
     createdAt: Instant,
 
@@ -50,7 +50,7 @@ object Image {
 
   // TODO: use errors protocol
   def build(
-    userId:  Long,
+    userId:  Int,
     file:    Path,
     caption: Option[String]
   ): Task[Either[String, Image]] = Task.defer(Task.fromTry(Try{

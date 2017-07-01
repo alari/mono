@@ -5,9 +5,9 @@ import java.nio.file.Path
 sealed trait ImageOp[T]
 
 case class StoreImage(
-  userId: Long, file: Path, caption: Option[String]
+  userId: Int, file: Path, caption: Option[String]
 ) extends ImageOp[Either[String, Image]]
 
-case class FindImage(imageId: Long) extends ImageOp[Option[Image]]
+case class FindImage(imageId: Int) extends ImageOp[Option[Image]]
 
 case class GetImageFile(image: Image) extends ImageOp[Path]

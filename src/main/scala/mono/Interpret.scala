@@ -9,7 +9,7 @@ import fs2.util.Attempt
 import monix.eval.Task
 import monix.execution.Scheduler
 import mono.alias.{ AliasInMemoryInterpreter, AliasOp }
-import mono.article.{ ArticleOp, ArticlesInMemoryInterpreter }
+import mono.article.{ ArticleOp, ArticlesDoobieInterpreter, ArticlesInMemoryInterpreter }
 import mono.person.{ PersonOp, PersonsDoobieInterpreter, PersonsInMemoryInterpreter }
 import mono.env.{ EnvConfigInterpreter, EnvOp }
 import mono.image.{ ImageOp, ImagesDoobieInterpreter, ImagesInMemoryInterpreter }
@@ -55,7 +55,8 @@ object Interpret {
 
     Task.sequence(Seq(
       PersonsDoobieInterpreter.init(xa),
-      ImagesDoobieInterpreter.init(xa)
+      ImagesDoobieInterpreter.init(xa),
+      ArticlesDoobieInterpreter.init(xa)
     )).map(ints ⇒
       log.info("Database Initialized: " + ints))
       .onErrorRecover{
@@ -63,7 +64,7 @@ object Interpret {
           log.error("Cannot initialize database", e)
       }.runAsync(Scheduler.global)
 
-    val i0: Op0 ~> Task = new ArticlesInMemoryInterpreter or new PersonsDoobieInterpreter(xa)
+    val i0: Op0 ~> Task = new ArticlesDoobieInterpreter(xa) or new PersonsDoobieInterpreter(xa)
     val i1: Op1 ~> Task = new EnvConfigInterpreter() or i0
     val i2: Op2 ~> Task = new ImagesDoobieInterpreter(xa, Paths.get("./images")) or i1
     new AliasInMemoryInterpreter or i2

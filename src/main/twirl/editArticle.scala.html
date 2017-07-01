@@ -27,7 +27,7 @@
                 }
                 <fieldset>
                     <legend>Год первой публикации</legend>
-                    <input type="number" name="publishedAt" value="@{article.publishedAt}"/>
+                    <input type="number" name="publishedAt" value="@{article.publishedYear}"/>
                     @errors.getOrElse("publishedAt", Nil).map {err =>
                         <div>Error: @err</div>
                     }

@@ -12,10 +12,10 @@ class PersonOps[F[_]](implicit Au: Inject[PersonOp, F]) {
   ): Free[F, Person] =
     inject[PersonOp, F](EnsureTelegramPerson(telegramId, name))
 
-  def getById(id: Long): Free[F, Person] =
+  def getById(id: Int): Free[F, Person] =
     inject[PersonOp, F](GetPersonById(id))
 
-  def getByIds(ids: Set[Long]): Free[F, Map[Long, Person]] =
+  def getByIds(ids: Set[Int]): Free[F, Map[Int, Person]] =
     inject[PersonOp, F](GetPersonsByIds(ids))
 
   def findByTelegramId(telegramId: Long): Free[F, Option[Person]] =

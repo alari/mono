@@ -65,107 +65,110 @@ class MonoBot(
   }
 
   val botOpInt: BotOp ~> Task = new (BotOp ~> Task) {
-    override def apply[A](fa: BotOp[A]): Task[A] = fa match {
-      case Say(text, chatId) ⇒
-        Task.fromFuture(request(
-          SendMessage(
-            Left(chatId),
-            text,
-            Some(ParseMode.Markdown),
-            None,
-            None,
-            None,
-            None
-          )
-        )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
+    override def apply[A](fa: BotOp[A]): Task[A] = {
+      logger.info(s"Going to apply: " + fa)
+      fa match {
+        case Say(text, chatId) ⇒
+          Task.fromFuture(request(
+            SendMessage(
+              Left(chatId),
+              text,
+              Some(ParseMode.Markdown),
+              None,
+              None,
+              None,
+              None
+            )
+          )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
 
-      case Reply(text, meta, forceReply) ⇒
-        Task.fromFuture(request(
-          SendMessage(
-            Left(meta.chat.id),
-            text,
-            Some(ParseMode.Markdown),
-            None,
-            None,
-            Some(meta.messageId),
-            if (forceReply) Some(ForceReply(forceReply = true, selective = Some(true)))
-            else None
-          )
-        )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
+        case Reply(text, meta, forceReply) ⇒
+          Task.fromFuture(request(
+            SendMessage(
+              Left(meta.chat.id),
+              text,
+              Some(ParseMode.Markdown),
+              None,
+              None,
+              Some(meta.messageId),
+              if (forceReply) Some(ForceReply(forceReply = true, selective = Some(true)))
+              else None
+            )
+          )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
 
-      case Choose(text, variants, chatId) ⇒
-        Task.fromFuture(request(
-          SendMessage(
-            Left(chatId),
-            text,
-            Some(ParseMode.Markdown),
-            None,
-            None,
-            None,
-            Some(ReplyKeyboardMarkup(
-              variants.map(_.map(KeyboardButton(_))),
-              oneTimeKeyboard = Some(true)
-            ))
-          )
-        )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
+        case Choose(text, variants, chatId) ⇒
+          Task.fromFuture(request(
+            SendMessage(
+              Left(chatId),
+              text,
+              Some(ParseMode.Markdown),
+              None,
+              None,
+              None,
+              Some(ReplyKeyboardMarkup(
+                variants.map(_.map(KeyboardButton(_))),
+                oneTimeKeyboard = Some(true)
+              ))
+            )
+          )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
 
-      case Inline(text, buttons, chatId, None) ⇒
-        Task.fromFuture(request(
-          SendMessage(
-            Left(chatId),
-            text,
-            Some(ParseMode.Markdown),
-            None,
-            None,
-            None,
-            Some(InlineKeyboardMarkup(
-              buttons.map(_.map{
-                case Inline.UrlButton(t, url) ⇒
-                  InlineKeyboardButton(t, url = Some(url))
-                case Inline.CallbackButton(t, callback) ⇒
-                  InlineKeyboardButton(t, callbackData = Some(callback))
-              })
-            ))
-          )
-        )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
+        case Inline(text, buttons, chatId, None) ⇒
+          Task.fromFuture(request(
+            SendMessage(
+              Left(chatId),
+              text,
+              Some(ParseMode.Markdown),
+              None,
+              None,
+              None,
+              Some(InlineKeyboardMarkup(
+                buttons.map(_.map{
+                  case Inline.UrlButton(t, url) ⇒
+                    InlineKeyboardButton(t, url = Some(url))
+                  case Inline.CallbackButton(t, callback) ⇒
+                    InlineKeyboardButton(t, callbackData = Some(callback))
+                })
+              ))
+            )
+          )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
 
-      case Inline(_, buttons, chatId, Some(msgId)) ⇒
-        Task.fromFuture(request(
-          EditMessageReplyMarkup(
-            Some(Left(chatId)),
-            Some(msgId),
-            None,
-            Some(InlineKeyboardMarkup(
-              buttons.map(_.map{
-                case Inline.UrlButton(t, url) ⇒
-                  InlineKeyboardButton(t, url = Some(url))
-                case Inline.CallbackButton(t, callback) ⇒
-                  InlineKeyboardButton(t, callbackData = Some(callback))
-              })
-            ))
-          )
-        )).map(m ⇒ m.left.map(_.messageId).getOrElse(0l)).asInstanceOf[Task[A]]
+        case Inline(_, buttons, chatId, Some(msgId)) ⇒
+          Task.fromFuture(request(
+            EditMessageReplyMarkup(
+              Some(Left(chatId)),
+              Some(msgId),
+              None,
+              Some(InlineKeyboardMarkup(
+                buttons.map(_.map{
+                  case Inline.UrlButton(t, url) ⇒
+                    InlineKeyboardButton(t, url = Some(url))
+                  case Inline.CallbackButton(t, callback) ⇒
+                    InlineKeyboardButton(t, callbackData = Some(callback))
+                })
+              ))
+            )
+          )).map(m ⇒ m.left.map(_.messageId).getOrElse(0l)).asInstanceOf[Task[A]]
 
-      case LoadFile(fileId) ⇒
-        for {
-          f ← Task.fromFuture(
-            request(GetFile(fileId))
-          )
-          uri = Uri(s"https://api.telegram.org/file/bot$token/${f.filePath.get}")
-          path = Files.createTempFile(fileId, "telegram")
-          fi ← Task.fromFuture(
-            Source
-              .single(HttpRequest(uri = uri))
-              .via(Http().outgoingConnectionHttps("api.telegram.org"))
-              .flatMapConcat(_.entity.dataBytes)
-              .runWith(FileIO.toPath(path))
-          )
-        } yield path.asInstanceOf[A]
+        case LoadFile(fileId) ⇒
+          for {
+            f ← Task.fromFuture(
+              request(GetFile(fileId))
+            )
+            uri = Uri(s"https://api.telegram.org/file/bot$token/${f.filePath.get}")
+            path = Files.createTempFile(fileId, "telegram")
+            fi ← Task.fromFuture(
+              Source
+                .single(HttpRequest(uri = uri))
+                .via(Http().outgoingConnectionHttps("api.telegram.org"))
+                .flatMapConcat(_.entity.dataBytes)
+                .runWith(FileIO.toPath(path))
+            )
+          } yield path.asInstanceOf[A]
 
-      case InlineAnswer(text, callbackId, _) ⇒
-        Task.fromFuture(
-          request(AnswerCallbackQuery(callbackId, text, None, None, None))
-        ).map(_ ⇒ ().asInstanceOf[A])
+        case InlineAnswer(text, callbackId, _) ⇒
+          Task.fromFuture(
+            request(AnswerCallbackQuery(callbackId, text, None, None, None))
+          ).map(_ ⇒ ().asInstanceOf[A])
+      }
     }
   }
 

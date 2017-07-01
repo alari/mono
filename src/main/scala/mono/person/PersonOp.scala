@@ -6,6 +6,6 @@ case class EnsureTelegramPerson(telegramId: Long, name: String) extends PersonOp
 
 case class FindPersonByTelegramId(telegramId: Long) extends PersonOp[Option[Person]]
 
-case class GetPersonById(id: Long) extends PersonOp[Person]
+case class GetPersonById(id: Int) extends PersonOp[Person]
 
-case class GetPersonsByIds(ids: Set[Long]) extends PersonOp[Map[Long, Person]]
+case class GetPersonsByIds(ids: Set[Int]) extends PersonOp[Map[Int, Person]]

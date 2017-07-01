@@ -10,52 +10,52 @@ import scala.language.higherKinds
 class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {
 
   def create(
-    authorId:  Long,
+    authorId:  Int,
     title:     String,
     createdAt: Instant
   ): Free[F, Article] =
     inject[ArticleOp, F](CreateArticle(authorId, title, createdAt))
 
   def fetch(
-    authorId: Option[Long],
+    authorId: Option[Int],
     q:        Option[String],
     offset:   Int,
     limit:    Int
   ): Free[F, Articles] =
     inject[ArticleOp, F](FetchArticles(authorId, q, offset, limit))
 
-  def getById(id: Long): Free[F, Article] =
+  def getById(id: Int): Free[F, Article] =
     inject[ArticleOp, F](GetArticleById(id))
 
   def fetchDrafts(
-    authorId: Long,
+    authorId: Int,
     offset:   Int,
     limit:    Int
   ): Free[F, Articles] =
     inject[ArticleOp, F](FetchDrafts(authorId, offset, limit))
 
-  def publishDraft(id: Long): Free[F, Article] =
+  def publishDraft(id: Int): Free[F, Article] =
     inject[ArticleOp, F](PublishDraft(id))
 
-  def draftArticle(id: Long): Free[F, Article] =
+  def draftArticle(id: Int): Free[F, Article] =
     inject[ArticleOp, F](DraftArticle(id))
 
-  def getText(id: Long): Free[F, String] =
+  def getText(id: Int): Free[F, String] =
     inject[ArticleOp, F](GetText(id))
 
-  def setText(id: Long, text: String): Free[F, String] =
+  def setText(id: Int, text: String): Free[F, String] =
     inject[ArticleOp, F](SetText(id, text))
 
-  def setTitle(id: Long, text: String): Free[F, Article] =
+  def setTitle(id: Int, text: String): Free[F, Article] =
     inject[ArticleOp, F](SetTitle(id, text))
 
-  def setHeadline(id: Long, text: Option[String]): Free[F, Article] =
+  def setHeadline(id: Int, text: Option[String]): Free[F, Article] =
     inject[ArticleOp, F](SetHeadline(id, text))
 
-  def setCover(id: Long, coverId: Option[Long]): Free[F, Article] =
+  def setCover(id: Int, coverId: Option[Int]): Free[F, Article] =
     inject[ArticleOp, F](SetCover(id, coverId))
 
-  def update(id: Long, title: String, headline: Option[String], publishedAt: Int): Free[F, Article] =
+  def update(id: Int, title: String, headline: Option[String], publishedAt: Option[Int]): Free[F, Article] =
     inject[ArticleOp, F](UpdateArticle(id, title, headline, publishedAt))
 }
 

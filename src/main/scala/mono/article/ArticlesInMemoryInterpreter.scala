@@ -1,8 +1,9 @@
 package mono.article
 
-import java.time.{ Instant, ZoneId }
-import java.util.concurrent.atomic.AtomicLong
+import java.time.Instant
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong }
 
+import cats.data.NonEmptyList
 import cats.~>
 import monix.eval.Task
 
@@ -13,22 +14,22 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
   private val texts = TrieMap.empty[Long, String]
 
   private def drafts(id: Long): List[Article] =
-    articles.values.filter(a ⇒ a.authorId == id && a.draft).toList
+    articles.values.filter(a ⇒ a.authorIds.toList.contains(id) && a.draft).toList
 
   private def pubs: List[Article] =
     articles.values.filterNot(_.draft).toList
 
-  private val id = new AtomicLong(0)
+  private val id = new AtomicInteger(0)
 
   override def apply[A](fa: ArticleOp[A]): Task[A] = (fa match {
     case CreateArticle(user, title, createdAt) ⇒
-      val a = Article(id.getAndIncrement(), user, title, None, None, createdAt, createdAt, createdAt.atZone(ZoneId.systemDefault()).getYear, 0, draft = true)
+      val a = Article(id.getAndIncrement(), NonEmptyList.of(user), title, None, None, Nil, createdAt, createdAt, None, 0, draft = true)
       articles.put(a.id, a)
       Task.now(a)
 
     case FetchArticles(authorId, q, offset, limit) ⇒
       val filtered = pubs.filter(a ⇒
-        authorId.fold(true)(_ == a.authorId))
+        authorId.fold(true)(a.authorIds.toList.contains))
       Task.now(Articles(filtered.slice(offset, offset + limit), filtered.size))
 
     case GetArticleById(i) ⇒
@@ -106,13 +107,13 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
         case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
       }
 
-    case UpdateArticle(i, title, headline, publishedAt) ⇒
+    case UpdateArticle(i, title, headline, publishedYear) ⇒
       articles.get(i) match {
         case Some(a) ⇒
           val aa = a.copy(
             title = title,
             headline = headline,
-            publishedAt = publishedAt,
+            publishedYear = publishedYear,
             version = a.version + 1,
             modifiedAt = Instant.now()
           )
