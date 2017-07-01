@@ -1,5 +1,7 @@
 package mono
 
+import java.nio.file.Paths
+
 import cats.data.Coproduct
 import cats.~>
 import doobie.util.transactor.DriverManagerTransactor
@@ -10,7 +12,7 @@ import mono.alias.{ AliasInMemoryInterpreter, AliasOp }
 import mono.article.{ ArticleOp, ArticlesInMemoryInterpreter }
 import mono.person.{ PersonOp, PersonsDoobieInterpreter, PersonsInMemoryInterpreter }
 import mono.env.{ EnvConfigInterpreter, EnvOp }
-import mono.image.{ ImageOp, ImagesInMemoryInterpreter }
+import mono.image.{ ImageOp, ImagesDoobieInterpreter, ImagesInMemoryInterpreter }
 import org.slf4j.LoggerFactory
 
 object Interpret {
@@ -52,13 +54,18 @@ object Interpret {
     )
 
     Task.sequence(Seq(
-      PersonsDoobieInterpreter.init(xa)
+      PersonsDoobieInterpreter.init(xa),
+      ImagesDoobieInterpreter.init(xa)
     )).map(ints ⇒
-      log.info("Database Initialized: " + ints)).runAsync(Scheduler.global)
+      log.info("Database Initialized: " + ints))
+      .onErrorRecover{
+        case e ⇒
+          log.error("Cannot initialize database", e)
+      }.runAsync(Scheduler.global)
 
     val i0: Op0 ~> Task = new ArticlesInMemoryInterpreter or new PersonsDoobieInterpreter(xa)
     val i1: Op1 ~> Task = new EnvConfigInterpreter() or i0
-    val i2: Op2 ~> Task = new ImagesInMemoryInterpreter or i1
+    val i2: Op2 ~> Task = new ImagesDoobieInterpreter(xa, Paths.get("./images")) or i1
     new AliasInMemoryInterpreter or i2
   }
 }

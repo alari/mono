@@ -10,7 +10,7 @@ import fs2.interop.cats._
 
 object PersonsDoobieInterpreter {
   val createTable: Update0 = sql"CREATE TABLE IF NOT EXISTS persons(id SERIAL, telegram_id INTEGER, name TEXT NOT NULL, created_at TIMESTAMP)".update
-  val createTelegramIdIndex: Update0 = sql"CREATE UNIQUE INDEX persons_telegram_id_uindex ON persons (telegram_id)".update
+  val createTelegramIdIndex: Update0 = sql"CREATE UNIQUE INDEX IF NOT EXISTS persons_telegram_id_uindex ON persons (telegram_id)".update
 
   def init(xa: Transactor[Task]): Task[Int] =
     (createTable.run *> createTelegramIdIndex.run).transact(xa)
