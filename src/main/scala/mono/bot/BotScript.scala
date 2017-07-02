@@ -4,12 +4,12 @@ import cats.data.Coproduct
 import cats.free.Free
 import cats.syntax.monoid._
 import mono.Interpret
-import mono.alias.AliasOps
-import mono.article.ArticleOps
-import mono.person.PersonOps
+import mono.core.alias.AliasOps
+import mono.core.article.ArticleOps
+import mono.core.person.PersonOps
 import mono.bot.script.Script._
 import mono.bot.script._
-import mono.env.EnvOps
+import mono.core.env.EnvOps
 
 object BotScript {
 

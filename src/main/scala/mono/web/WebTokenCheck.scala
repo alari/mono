@@ -7,8 +7,8 @@ import cats.~>
 import monix.cats._
 import monix.eval.Task
 import monix.execution.Scheduler
-import mono.person.{ Person, PersonOps }
-import mono.env.EnvOps
+import mono.core.person.{ Person, PersonOps }
+import mono.core.env.EnvOps
 
 import scala.language.higherKinds
 

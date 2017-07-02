@@ -1,14 +1,14 @@
 package mono.bot.script
 
 import cats.free.Free
-import mono.alias.AliasPointer.Person
-import mono.alias.{ AliasOps, AliasPointer }
-import mono.article.{ ArticleOps, Articles }
-import mono.person.PersonOps
+import mono.core.alias.AliasPointer.Person
+import mono.core.alias.{ AliasOps, AliasPointer }
+import mono.core.article.{ ArticleOps, Articles }
+import mono.core.person.PersonOps
 import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot._
 import mono.bot.BotState.{ FetchingArticles, Idle }
-import mono.env.EnvOps
+import mono.core.env.EnvOps
 
 class FetchArticlesScript(implicit
   B: BotOps[BotScript.Op],

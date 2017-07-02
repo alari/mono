@@ -7,16 +7,16 @@ import cats.data.{ NonEmptyList, Validated }
 import cats.free.Free
 import cats.~>
 import monix.eval.Task
-import mono.article.{ Article, ArticleOps }
-import mono.person.{ Person, PersonOps }
+import mono.core.article.{ Article, ArticleOps }
+import mono.core.person.{ Person, PersonOps }
 
 import scala.language.higherKinds
 import monix.execution.Scheduler.Implicits.global
-import mono.env.EnvOps
+import mono.core.env.EnvOps
 import play.twirl.api.Html
 import cats.implicits._
-import mono.alias.{ Alias, AliasOps, AliasPointer }
-import mono.image.{ Image, ImageOps }
+import mono.core.alias.{ Alias, AliasOps, AliasPointer }
+import mono.core.image.{ Image, ImageOps }
 
 class WebArticle[F[_]](implicit A: ArticleOps[F], Au: PersonOps[F], As: AliasOps[F], E: EnvOps[F], Im: ImageOps[F]) extends Web[F] {
 

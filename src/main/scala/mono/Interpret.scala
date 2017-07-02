@@ -8,11 +8,11 @@ import doobie.util.transactor.DriverManagerTransactor
 import fs2.util.Attempt
 import monix.eval.Task
 import monix.execution.Scheduler
-import mono.alias.{ AliasInMemoryInterpreter, AliasOp }
-import mono.article.{ ArticleOp, ArticlesDoobieInterpreter, ArticlesInMemoryInterpreter }
-import mono.person.{ PersonOp, PersonsDoobieInterpreter, PersonsInMemoryInterpreter }
-import mono.env.{ EnvConfigInterpreter, EnvOp }
-import mono.image.{ ImageOp, ImagesDoobieInterpreter, ImagesInMemoryInterpreter }
+import mono.core.alias.{ AliasInMemoryInterpreter, AliasOp }
+import mono.core.article.{ ArticleOp, ArticlesDoobieInterpreter, ArticlesInMemoryInterpreter }
+import mono.core.person.{ PersonOp, PersonsDoobieInterpreter, PersonsInMemoryInterpreter }
+import mono.core.env.{ EnvConfigInterpreter, EnvOp }
+import mono.core.image.{ ImageOp, ImagesDoobieInterpreter, ImagesInMemoryInterpreter }
 import org.slf4j.LoggerFactory
 
 object Interpret {
@@ -34,21 +34,21 @@ object Interpret {
     new AliasInMemoryInterpreter or i2
   }
 
+  implicit object taskFS2 extends fs2.util.Catchable[Task] with fs2.util.Suspendable[Task] {
+    override def suspend[A](fa: ⇒ Task[A]): Task[A] = Task.defer(fa)
+
+    override def fail[A](err: Throwable): Task[A] =
+      Task.raiseError(err)
+
+    override def attempt[A](fa: Task[A]): Task[Attempt[A]] =
+      fa.map[Attempt[A]](a ⇒ Right(a)).onErrorHandle(Left(_))
+
+    override def flatMap[A, B](a: Task[A])(f: (A) ⇒ Task[B]): Task[B] = a.flatMap(f)
+
+    override def pure[A](a: A): Task[A] = Task.now(a)
+  }
+
   lazy val inPostgres: Op ~> Task = {
-    implicit object taskCatchable extends fs2.util.Catchable[Task] with fs2.util.Suspendable[Task] {
-      override def suspend[A](fa: ⇒ Task[A]): Task[A] = Task.defer(fa)
-
-      override def fail[A](err: Throwable): Task[A] =
-        Task.raiseError(err)
-
-      override def attempt[A](fa: Task[A]): Task[Attempt[A]] =
-        fa.map[Attempt[A]](a ⇒ Right(a)).onErrorHandle(Left(_))
-
-      override def flatMap[A, B](a: Task[A])(f: (A) ⇒ Task[B]): Task[B] = a.flatMap(f)
-
-      override def pure[A](a: A): Task[A] = Task.now(a)
-    }
-
     val xa = DriverManagerTransactor[Task](
       "org.postgresql.Driver", "jdbc:postgresql:mono"
     )

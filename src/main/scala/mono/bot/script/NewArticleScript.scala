@@ -3,9 +3,9 @@ package mono.bot.script
 import java.time.Instant
 
 import cats.free.Free
-import mono.alias.{ Alias, AliasOps }
-import mono.article.{ Article, ArticleOps }
-import mono.person.PersonOps
+import mono.core.alias.{ Alias, AliasOps }
+import mono.core.article.{ Article, ArticleOps }
+import mono.core.person.PersonOps
 import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot.BotState.{ ArticleContext, Idle, InitNewArticle }
 import mono.bot._

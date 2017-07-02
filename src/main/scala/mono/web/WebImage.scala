@@ -11,7 +11,7 @@ import cats.free.Free
 import cats.~>
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
-import mono.image.{ Image, ImageOps }
+import mono.core.image.{ Image, ImageOps }
 
 import scala.language.higherKinds
 

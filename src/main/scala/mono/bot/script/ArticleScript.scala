@@ -3,14 +3,14 @@ package mono.bot.script
 import java.time.Instant
 
 import cats.free.Free
-import mono.alias.AliasOps
-import mono.article.{ Article, ArticleOps }
-import mono.person.PersonOps
+import mono.core.alias.AliasOps
+import mono.core.article.{ Article, ArticleOps }
+import mono.core.person.PersonOps
 import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot.BotState.{ ArticleContentContext, ArticleContext, ArticleDescriptionContext, ArticleTitleContext }
 import mono.bot._
-import mono.env.EnvOps
-import mono.image.ImageOps
+import mono.core.env.EnvOps
+import mono.core.image.ImageOps
 import pdi.jwt.JwtClaim
 
 import scala.io.Source
@@ -110,7 +110,7 @@ class ArticleScript(implicit
 
     case (state, Command(showR(id), _, m)) ⇒
       A.getById(id.toInt).flatMap{ article ⇒
-        if (article.draft) {
+        if (article.isDraft) {
           for {
             _ ← B.reply("Статья не найдена", m)
           } yield state
@@ -188,7 +188,7 @@ object ArticleScript {
     )
   } yield Seq(
     Seq(
-      Inline.CallbackButton(if (article.draft) Publish else Hide, s"article:${article.id}:${if (article.draft) "publish" else "draft"}"),
+      Inline.CallbackButton(if (article.isDraft) Publish else Hide, s"article:${article.id}:${if (article.isDraft) "publish" else "draft"}"),
       Inline.UrlButton("Смотреть", url),
       Inline.UrlButton("Редактировать", s"$host/edit/${article.id}?token=$token")
     )

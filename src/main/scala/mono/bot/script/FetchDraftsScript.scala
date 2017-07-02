@@ -1,10 +1,10 @@
 package mono.bot.script
 
-import mono.article.ArticleOps
+import mono.core.article.ArticleOps
 import mono.bot.BotScript.{ Op, Scenario }
 import mono.bot.{ BotOps, BotScript, Command }
 import ArticleScript.showArticleContext
-import mono.person.PersonOps
+import mono.core.person.PersonOps
 
 class FetchDraftsScript(implicit
   B: BotOps[BotScript.Op],

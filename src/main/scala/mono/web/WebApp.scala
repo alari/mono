@@ -6,12 +6,12 @@ import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import cats.~>
 import monix.eval.Task
-import mono.article.ArticleOps
-import mono.person.PersonOps
+import mono.core.article.ArticleOps
+import mono.core.person.PersonOps
 import akka.http.scaladsl.server.Directives._
-import mono.alias.AliasOps
-import mono.env.EnvOps
-import mono.image.ImageOps
+import mono.core.alias.AliasOps
+import mono.core.env.EnvOps
+import mono.core.image.ImageOps
 
 import scala.language.higherKinds
 

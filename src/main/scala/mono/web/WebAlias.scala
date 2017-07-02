@@ -3,12 +3,12 @@ package mono.web
 import akka.http.scaladsl.server.{ Directive1, Directives, Route }
 import cats.~>
 import monix.eval.Task
-import mono.alias.{ Alias, AliasOps, AliasPointer }
-import mono.article.ArticleOps
-import mono.person.PersonOps
+import mono.core.alias.{ Alias, AliasOps, AliasPointer }
+import mono.core.article.ArticleOps
+import mono.core.person.PersonOps
 import Directives._
 import monix.execution.Scheduler.Implicits.global
-import mono.image.ImageOps
+import mono.core.image.ImageOps
 
 import scala.language.higherKinds
 import scala.util.{ Failure, Success }
