@@ -28,7 +28,7 @@ object ArticlesDoobieInterpreter {
                 cover_id INTEGER REFERENCES images,
                 image_ids INTEGER[] NOT NULL DEFAULT ARRAY[]::integer[],
                 created_at TIMESTAMP NOT NULL,
-                modified_at TIMESTAMP DEFAULT current_timestamp,
+                modified_at TIMESTAMP NOT NULL,
                 published_year SMALLINT,
                 version SMALLINT DEFAULT 0,
                 is_draft BOOLEAN NOT NULL,
@@ -44,47 +44,62 @@ object ArticlesDoobieInterpreter {
   def init(xa: Transactor[Task]): Task[Int] =
     (createArticlesTable.run *> createArticleAuthorsIndex.run *> createArticleImagesIndex.run).transact(xa)
 
+  case class Filter(
+      authorIds: List[Int],
+      isDraft:   Boolean
+  ) {
+    def fr =
+      fr" WHERE is_draft=$isDraft " ++ (if (authorIds.isEmpty) fr""
+      else fr" AND author_ids @> $authorIds ")
+  }
+
   def insertArticle(authorIds: NonEmptyList[Int], title: String, createdAt: Instant): ConnectionIO[Int] =
-    sql"INSERT INTO articles(author_ids, title, created_at, is_draft) VALUES($authorIds, $title, $createdAt, TRUE )"
+    sql"INSERT INTO articles(author_ids, title, created_at, modified_at, is_draft) VALUES($authorIds, $title, $createdAt, current_timestamp, TRUE )"
       .update.withUniqueGeneratedKeys("id")
 
-  val selectArticle: Fragment = sql"SELECT id,author_ids,title,headline,cover_id,image_ids,created_at,modified_at,published_year,version,is_draft FROM articles "
+  val selectArticle: Fragment =
+    sql"SELECT id,author_ids,title,headline,cover_id,image_ids,created_at,modified_at,published_year,version,is_draft FROM articles "
 
-  def queryArticles: Query0[Article] =
-    (selectArticle ++ fr"WHERE is_draft=FALSE").query[Article]
+  def query(filter: Filter, offset: Int, limit: Int): Query0[Article] =
+    (selectArticle ++ filter.fr ++ fr" OFFSET $offset LIMIT $limit").query[Article]
 
-  def queryDrafts(authorId: Int): Query0[Article] =
-    {
-      val ids = List(authorId)
-      (selectArticle ++ fr"WHERE author_ids @> $ids AND is_draft=TRUE").query[Article]
-    }
+  def count(filter: Filter): Query0[Int] =
+    (sql"SELECT COUNT(id) FROM articles " ++ filter.fr).query[Int]
 
   def getArticle(id: Int): Query0[Article] =
     (selectArticle ++ fr"WHERE id=$id LIMIT 1").query[Article]
 
   def draftArticle(id: Int): Update0 =
-    sql"UPDATE articles SET is_draft=TRUE WHERE id=$id".update
+    sql"UPDATE articles SET is_draft=TRUE, modified_at=current_timestamp WHERE id=$id".update
 
   def publishDraft(id: Int, year: Int): Update0 =
-    sql"UPDATE articles SET is_draft=FALSE, published_year=COALESCE(published_year, $year) WHERE id=$id".update
+    sql"UPDATE articles SET is_draft=FALSE, published_year=COALESCE(published_year, $year), modified_at=current_timestamp WHERE id=$id".update
 
   def getArticleText(id: Int): Query0[Option[String]] =
     sql"SELECT text FROM articles WHERE id=$id LIMIT 1".query
 
   def setArticleText(id: Int, value: Option[String]): Update0 =
-    sql"UPDATE articles SET text=$value, version=version+1 WHERE id=$id".update
-
-  def setTitle(id: Int, value: String): Update0 =
-    sql"UPDATE articles SET title=$value, version=version+1 WHERE id=$id".update
+    sql"UPDATE articles SET text=$value, version=version+1, modified_at=current_timestamp WHERE id=$id".update
 
   def setCoverId(id: Int, value: Option[Int]): Update0 =
-    sql"UPDATE articles SET cover_id=$value, version=version+1 WHERE id=$id".update
-
-  def setHeadline(id: Int, value: Option[String]): Update0 =
-    sql"UPDATE articles SET headline=$value, version=version+1 WHERE id=$id".update
+    sql"UPDATE articles SET cover_id=$value, version=version+1, modified_at=current_timestamp WHERE id=$id".update
 
   def update(id: Int, title: String, headline: Option[String], publishedYear: Option[Int]): Update0 =
-    sql"UPDATE articles SET title = $title, headline = $headline, published_year = $publishedYear, version = version+1 WHERE id=$id".update
+    sql"UPDATE articles SET title = $title, headline = $headline, published_year = $publishedYear, version = version+1, modified_at=current_timestamp WHERE id=$id".update
+
+  def addImage(id: Int, imageId: Int): Update0 = {
+    val imageIds = imageId :: Nil
+    sql"UPDATE articles SET image_ids = array_append(image_ids, $imageId), version=version+1, modified_at=current_timestamp WHERE id=$id AND NOT image_ids @> $imageIds".update
+  }
+
+  def removeImage(id: Int, imageId: Int): Update0 = {
+    val imageIds = imageId :: Nil
+    sql"UPDATE articles SET image_ids = array_remove(image_ids, $imageId), version=version+1, modified_at=current_timestamp WHERE id=$id AND image_ids @> $imageIds".update
+  }
+
+  def deleteArticle(id: Int): Update0 =
+    sql"DELETE FROM articles WHERE id=$id".update
+
 }
 
 class ArticlesDoobieInterpreter(xa: Transactor[Task]) extends (ArticleOp ~> Task) {
@@ -92,25 +107,28 @@ class ArticlesDoobieInterpreter(xa: Transactor[Task]) extends (ArticleOp ~> Task
 
   override def apply[A](fa: ArticleOp[A]): Task[A] = (fa match {
     case CreateArticle(user, title, createdAt) ⇒
-      insertArticle(NonEmptyList.of(user), title, createdAt).transact(xa).map { id ⇒
-        Article(id, NonEmptyList.of(user), title, None, None, Nil, createdAt, createdAt, None, 0, isDraft = true)
-      }
+      (for {
+        id ← insertArticle(NonEmptyList.of(user), title, createdAt)
+        article ← getArticle(id).unique
+      } yield article).transact(xa)
 
     case FetchArticles(authorId, q, offset, limit) ⇒
-      queryArticles.to[List].transact(xa).map { pubs ⇒
-        // TODO query by postgres
-        val filtered = pubs.filter(a ⇒
-          authorId.fold(true)(a.authorIds.toList.contains))
-        Articles(filtered.slice(offset, offset + limit), filtered.size)
-      }
+      val filter = Filter(authorId.toList, isDraft = false)
+      (for {
+        drafts ← query(filter, offset, limit).list
+        cnt ← count(filter).unique
+      } yield Articles(drafts, cnt)).transact(xa)
 
     case GetArticleById(i) ⇒
       // TODO handle error
       getArticle(i).unique.transact(xa)
 
     case FetchDrafts(authorId, offset, limit) ⇒
-      // TODO offset/limit with doobie
-      queryDrafts(authorId).list.transact(xa).map(drafts ⇒ Articles(drafts.slice(offset, offset + limit), drafts.size))
+      val filter = Filter(authorId :: Nil, isDraft = true)
+      (for {
+        drafts ← query(filter, offset, limit).list
+        cnt ← count(filter).unique
+      } yield Articles(drafts, cnt)).transact(xa)
 
     case PublishDraft(i, y) ⇒
       (for {
@@ -130,18 +148,6 @@ class ArticlesDoobieInterpreter(xa: Transactor[Task]) extends (ArticleOp ~> Task
     case SetText(i, t) ⇒
       setArticleText(i, Option(t).filter(_.nonEmpty)).run.map(_ ⇒ t).transact(xa)
 
-    case SetTitle(i, t) ⇒
-      (for {
-        _ ← setTitle(i, t).run
-        a ← getArticle(i).unique
-      } yield a).transact(xa)
-
-    case SetHeadline(i, t) ⇒
-      (for {
-        _ ← setHeadline(i, t).run
-        a ← getArticle(i).unique
-      } yield a).transact(xa)
-
     case SetCover(i, c) ⇒
       (for {
         _ ← setCoverId(i, c).run
@@ -153,6 +159,21 @@ class ArticlesDoobieInterpreter(xa: Transactor[Task]) extends (ArticleOp ~> Task
         _ ← update(i, title, headline, publishedAt).run
         a ← getArticle(i).unique
       } yield a).transact(xa)
+
+    case AddImage(i, imageId) ⇒
+      (for {
+        _ ← addImage(i, imageId).run
+        a ← getArticle(i).unique
+      } yield a).transact(xa)
+
+    case RemoveImage(i, imageId) ⇒
+      (for {
+        _ ← removeImage(i, imageId).run
+        a ← getArticle(i).unique
+      } yield a).transact(xa)
+
+    case DeleteArticle(i) ⇒
+      deleteArticle(i).run.transact(xa).map(_ > 0)
 
   }).map(_.asInstanceOf[A])
 }

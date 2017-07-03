@@ -34,52 +34,6 @@ class ArticleScript(implicit
   private val draftR = "article:([0-9]+):draft".r
 
   override val scenario: Scenario = {
-    case (ArticleContext(id), Plain(`Publish`, m)) ⇒
-      for {
-        a ← A.publishDraft(id)
-        _ ← As.tryPointTo(a.title, a, force = false)
-        _ ← B.reply("Опубликован", m)
-      } yield ArticleContext(id)
-
-    case (ArticleContext(id), Plain(`Hide`, m)) ⇒
-      for {
-        _ ← A.draftArticle(id)
-        _ ← B.reply("Скрыт", m)
-      } yield ArticleContext(id)
-
-    case (ArticleContext(id), Plain(`Show`, m)) ⇒
-      showArticle(id, m)
-
-    case (ArticleContext(id), Plain(`EditTitle`, m)) ⇒
-      for {
-        a ← A.getById(id)
-        _ ← B.reply(s"Введите заголовок, сейчас `${a.title}`", m, forceReply = true)
-      } yield ArticleTitleContext(id)
-
-    case (ArticleTitleContext(id), Plain(text, m)) ⇒
-      for {
-        a ← A.setTitle(id, text)
-        _ ← B.reply("Сохранили заголовок", m)
-        s ← showArticleContext(a, m)
-      } yield s
-
-    case (ArticleContext(id), Plain(EditHeadline, m)) ⇒
-      for {
-        a ← A.getById(id)
-        _ ← B.reply(s"Введите аннотацию\n${a.headline.getOrElse("")}", m, forceReply = true)
-      } yield ArticleDescriptionContext(id)
-
-    case (ArticleDescriptionContext(id), Plain(text, m)) ⇒
-      for {
-        a ← A.setHeadline(id, Some(text).map(_.trim).filter(_.nonEmpty))
-        _ ← B.reply("Сохранили аннотацию", m)
-        s ← showArticleContext(a, m)
-      } yield s
-
-    case (ArticleContext(id), Plain(`EditContent`, m)) ⇒
-      for {
-        _ ← B.reply("Введите содержимое", m)
-      } yield ArticleContentContext(id)
 
     case (ArticleContext(id), Image(fileId, caption, m)) ⇒
       for {
@@ -90,20 +44,12 @@ class ArticleScript(implicit
         s ← showArticleContext(a, m)
       } yield s
 
-    case (ArticleContentContext(id), Plain(text, m)) ⇒
-      for {
-        _ ← A.setText(id, text)
-        a ← A.getById(id)
-        _ ← B.reply("Сохранили текст", m)
-        s ← showArticleContext(a, m)
-      } yield s
-
     case (ArticleContentContext(id), File(fileId, Some("text/plain"), _, _, m)) ⇒
       for {
         read ← readTextFile(fileId)
-        (changeTitle, text) = read
+        (_, text) = read
         _ ← A.setText(id, text)
-        a ← changeTitle.fold(A.getById(id))(title ⇒ A.setTitle(id, title))
+        a ← A.getById(id)
         _ ← B.reply("Сохранили текст", m)
         s ← showArticleContext(a, m)
       } yield s
@@ -146,9 +92,6 @@ object ArticleScript {
   val Publish = "Опубликовать"
   val Hide = "Скрыть"
   val Show = "Посмотреть"
-  val EditTitle = "Название"
-  val EditHeadline = "Аннотация"
-  val EditContent = "Текст"
 
   def readTextFile(fileId: String)(implicit B: BotOps[BotScript.Op]): Free[BotScript.Op, (Option[String], String)] =
     for {

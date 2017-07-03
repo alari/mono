@@ -35,8 +35,10 @@ case class SetText(id: Int, text: String) extends ArticleOp[String]
 
 case class UpdateArticle(id: Int, title: String, headline: Option[String], publishedYear: Option[Int]) extends ArticleOp[Article]
 
-case class SetTitle(id: Int, text: String) extends ArticleOp[Article]
-
-case class SetHeadline(id: Int, text: Option[String]) extends ArticleOp[Article]
-
 case class SetCover(id: Int, coverId: Option[Int]) extends ArticleOp[Article]
+
+case class AddImage(id: Int, imageId: Int) extends ArticleOp[Article]
+
+case class RemoveImage(id: Int, imageId: Int) extends ArticleOp[Article]
+
+case class DeleteArticle(id: Int) extends ArticleOp[Boolean]

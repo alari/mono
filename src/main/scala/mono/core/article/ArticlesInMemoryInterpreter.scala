@@ -1,7 +1,7 @@
 package mono.core.article
 
-import java.time.{ Instant, LocalDateTime }
-import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong }
+import java.time.Instant
+import java.util.concurrent.atomic.AtomicInteger
 
 import cats.data.NonEmptyList
 import cats.~>
@@ -71,32 +71,6 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
       articles(i) = articles(i).copy(modifiedAt = Instant.now(), version = articles(i).version + 1)
       Task.now(t)
 
-    case SetTitle(i, t) ⇒
-      articles.get(i) match {
-        case Some(a) ⇒
-          val aa = a.copy(
-            title = t,
-            modifiedAt = Instant.now(),
-            version = a.version + 1
-          )
-          articles(i) = aa
-          Task.now(aa)
-        case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
-      }
-
-    case SetHeadline(i, t) ⇒
-      articles.get(i) match {
-        case Some(a) ⇒
-          val aa = a.copy(
-            headline = t,
-            modifiedAt = Instant.now(),
-            version = a.version + 1
-          )
-          articles(i) = aa
-          Task.now(aa)
-        case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
-      }
-
     case SetCover(i, c) ⇒
       articles.get(i) match {
         case Some(a) ⇒
@@ -124,6 +98,35 @@ class ArticlesInMemoryInterpreter extends (ArticleOp ~> Task) {
           Task.now(aa)
         case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
       }
+
+    case AddImage(i, imageId) ⇒
+      articles.get(i) match {
+        case Some(a) ⇒
+          val aa = a.copy(
+            imageIds = (a.imageIds :+ imageId).distinct,
+            version = a.version + 1,
+            modifiedAt = Instant.now()
+          )
+          articles(i) = aa
+          Task.now(aa)
+        case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
+      }
+
+    case RemoveImage(i, imageId) ⇒
+      articles.get(i) match {
+        case Some(a) ⇒
+          val aa = a.copy(
+            imageIds = a.imageIds.filterNot(_ == imageId),
+            version = a.version + 1,
+            modifiedAt = Instant.now()
+          )
+          articles(i) = aa
+          Task.now(aa)
+        case None ⇒ Task.raiseError(new NoSuchElementException("ID not found: " + i))
+      }
+
+    case DeleteArticle(i) ⇒
+      Task.now(articles.remove(i).isDefined)
 
   }).map(_.asInstanceOf[A])
 }

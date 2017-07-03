@@ -46,17 +46,20 @@ class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {
   def setText(id: Int, text: String): Free[F, String] =
     inject[ArticleOp, F](SetText(id, text))
 
-  def setTitle(id: Int, text: String): Free[F, Article] =
-    inject[ArticleOp, F](SetTitle(id, text))
-
-  def setHeadline(id: Int, text: Option[String]): Free[F, Article] =
-    inject[ArticleOp, F](SetHeadline(id, text))
-
   def setCover(id: Int, coverId: Option[Int]): Free[F, Article] =
     inject[ArticleOp, F](SetCover(id, coverId))
 
   def update(id: Int, title: String, headline: Option[String], publishedAt: Option[Int]): Free[F, Article] =
     inject[ArticleOp, F](UpdateArticle(id, title, headline, publishedAt))
+
+  def addImage(id: Int, imageId: Int): Free[F, Article] =
+    inject[ArticleOp, F](AddImage(id, imageId))
+
+  def removeImage(id: Int, imageId: Int): Free[F, Article] =
+    inject[ArticleOp, F](RemoveImage(id, imageId))
+
+  def delete(id: Int): Free[F, Boolean] =
+    inject[ArticleOp, F](DeleteArticle(id))
 }
 
 object ArticleOps {
