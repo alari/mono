@@ -28,5 +28,8 @@ class ImagesInMemoryInterpreter extends (ImageOp ~> Task) {
 
     case FindImage(imageId) ⇒
       Task.now(cache.get(imageId).map(_._1).asInstanceOf[A])
+
+    case GetImageById(imageId) ⇒
+      Task.now(cache(imageId)._1.asInstanceOf[A])
   }
 }

@@ -16,7 +16,7 @@ class FetchDraftsScript(implicit
 
   private val DefaultLimit = 5
 
-  private def showDrafts(state: BotState, offset: Int, limit: Int, m: Incoming.Meta, isReply: Boolean = false): Free[BotScript.Op, BotState] =
+  private def showDrafts(state: BotState, offset: Int, limit: Int, m: Incoming.Meta, callbackId: String = null): Free[BotScript.Op, BotState] =
     for {
       person ← P.findByTelegramId(m.chat.id)
       drafts ← A.fetchDrafts(person.map(_.id).get, offset, limit)
@@ -26,7 +26,9 @@ class FetchDraftsScript(implicit
         Option(offset - limit).filter(_ >= 0).map(o ⇒ Inline.CallbackButton("←", s"show:drafts:$o")),
         Option(offset + limit).filter(_ < drafts.count).map(o ⇒ Inline.CallbackButton("→", s"show:drafts:$o"))
       ).flatten
-      _ ← if (buttons.size > 1) B.inline(s"Ваши черновики. Всего: ${drafts.count}. Создать новый: /new", buttons, m.chat.id, Some(m.messageId).filter(_ ⇒ isReply))
+      _ ← if (buttons.size > 1)
+        B.inline(s"Ваши черновики. Всего: ${drafts.count}. Создать новый: /new", buttons, m.chat.id,
+          Option(callbackId).map(cid ⇒ Right(cid → m.messageId)))
       else B.reply("Нет черновиков. Создайте с /new", m)
     } yield state
 
@@ -48,7 +50,7 @@ class FetchDraftsScript(implicit
 
     case (state, InlineCallback(listDraftsR(offset), callbackId, m)) ⇒
       for {
-        _ ← showDrafts(state, offset.toInt, DefaultLimit, m, isReply = true)
+        _ ← showDrafts(state, offset.toInt, DefaultLimit, m, callbackId)
         _ ← B.answer(None, callbackId)
       } yield state
   }

@@ -7,23 +7,18 @@ import mono.core.alias.AliasOps
 import mono.core.article.{ Article, ArticleOps }
 import mono.core.person.PersonOps
 import mono.bot.BotScript.{ Op, Scenario }
-import mono.bot.BotState.{ ArticleContentContext, ArticleContext, ArticleDescriptionContext, ArticleTitleContext }
+import mono.bot.BotState.{ ArticleContentContext, ArticleContext }
 import mono.bot._
 import mono.core.env.EnvOps
-import mono.core.image.ImageOps
 import pdi.jwt.JwtClaim
 
 import scala.io.Source
 
-/**
- * TODO: загрузка картинки обложки
- */
 class ArticleScript(implicit
   B: BotOps[BotScript.Op],
                     A:  ArticleOps[BotScript.Op],
                     As: AliasOps[BotScript.Op],
                     Au: PersonOps[BotScript.Op],
-                    Im: ImageOps[BotScript.Op],
                     E:  EnvOps[BotScript.Op]) extends Script {
 
   import ArticleScript._
@@ -34,15 +29,6 @@ class ArticleScript(implicit
   private val draftR = "article:([0-9]+):draft".r
 
   override val scenario: Scenario = {
-
-    case (ArticleContext(id), Image(fileId, caption, m)) ⇒
-      for {
-        ft ← B.loadFile(fileId)
-        a ← Au.ensureTelegram(m.chat.id, m.chat.title.getOrElse(m.chat.id.toString))
-        i ← Im.store(a.id, ft, caption)
-        a ← A.setCover(id, i.toOption.map(_.id))
-        s ← showArticleContext(a, m)
-      } yield s
 
     case (ArticleContentContext(id), File(fileId, Some("text/plain"), _, _, m)) ⇒
       for {
@@ -71,7 +57,7 @@ class ArticleScript(implicit
           _ ← As.tryPointTo(a.title, a, force = false)
           _ ← B.answer(Some("Опубликовано"), callbackId)
           buttons ← ArticleScript.articleContextButtons(a, m)
-          _ ← B.inline("", buttons, m.chat.id, Some(m.messageId))
+          _ ← B.inline("", buttons, m.chat.id, Some(Right(callbackId → m.messageId)))
         } yield state
       }
 
@@ -82,7 +68,7 @@ class ArticleScript(implicit
           _ ← As.tryPointTo(a.title, a, force = false)
           _ ← B.answer(Some("Скрыто"), callbackId)
           buttons ← ArticleScript.articleContextButtons(a, m)
-          _ ← B.inline("", buttons, m.chat.id, Some(m.messageId))
+          _ ← B.inline("", buttons, m.chat.id, Some(Right(callbackId → m.messageId)))
         } yield state
       }
   }

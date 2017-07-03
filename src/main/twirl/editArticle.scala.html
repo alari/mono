@@ -21,7 +21,8 @@
                         <div>Error: @err</div>
                     }
                 </fieldset>
-                <textarea name="text">@{text}</textarea>
+                <textarea name="text" style="width:100%;min-height:400px;">@{text}</textarea>
+                <pre>@{article.imageIds.map(i => s"""[image:$i]: /image/$i""").mkString("\n")}</pre>
                 @errors.getOrElse("text", Nil).map {err =>
                     <div>Error: @err</div>
                 }

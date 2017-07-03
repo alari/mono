@@ -131,12 +131,32 @@ class MonoBot(
             )
           )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
 
-        case Inline(_, buttons, chatId, Some(msgId)) ⇒
+        case Inline(text, buttons, chatId, Some(Left(msgId))) ⇒
+          Task.fromFuture(request(
+            SendMessage(
+              Left(chatId),
+              text,
+              Some(ParseMode.Markdown),
+              None,
+              None,
+              Some(msgId),
+              Some(InlineKeyboardMarkup(
+                buttons.map(_.map{
+                  case Inline.UrlButton(t, url) ⇒
+                    InlineKeyboardButton(t, url = Some(url))
+                  case Inline.CallbackButton(t, callback) ⇒
+                    InlineKeyboardButton(t, callbackData = Some(callback))
+                })
+              ))
+            )
+          )).map(m ⇒ m.messageId).asInstanceOf[Task[A]]
+
+        case Inline(_, buttons, chatId, Some(Right((callbackId, msgId)))) ⇒
           Task.fromFuture(request(
             EditMessageReplyMarkup(
               Some(Left(chatId)),
               Some(msgId),
-              None,
+              Some(callbackId),
               Some(InlineKeyboardMarkup(
                 buttons.map(_.map{
                   case Inline.UrlButton(t, url) ⇒

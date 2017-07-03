@@ -60,11 +60,16 @@ class ImagesDoobieInterpreter(xa: Transactor[Task], baseDir: Path) extends (Imag
         case Left(l) ⇒
           Task.now(Left(l))
       }.asInstanceOf[Task[A]]
+
     case GetImageFile(image) ⇒
       // TODO: what if there's no image?
       Task.now(baseDir.resolve(image.fileDir).resolve(image.fileName).asInstanceOf[A])
 
     case FindImage(imageId) ⇒
       findImageQuery(imageId).option.transact(xa).asInstanceOf[Task[A]]
+
+    case GetImageById(imageId) ⇒
+      findImageQuery(imageId).unique.transact(xa).asInstanceOf[Task[A]]
+
   }
 }

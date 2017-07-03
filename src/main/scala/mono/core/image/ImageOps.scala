@@ -16,6 +16,9 @@ class ImageOps[F[_]](implicit I: Inject[ImageOp, F]) {
   def find(imageId: Int): Free[F, Option[Image]] =
     inject[ImageOp, F](FindImage(imageId))
 
+  def getById(imageId: Int): Free[F, Image] =
+    inject[ImageOp, F](GetImageById(imageId))
+
   def getFile(image: Image): Free[F, Path] =
     inject[ImageOp, F](GetImageFile(image))
 }

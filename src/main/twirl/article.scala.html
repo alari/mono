@@ -21,7 +21,7 @@
                 <p>@d</p>
             }
 
-            @{mono.core.text.TextFormat.toHtml(text)}
+            @{mono.core.text.TextFormat.toHtml(text+ article.imageIds.map(i => s"""[image:$i]: /image/$i""").mkString("\n\n", "\n", ""))}
         </article>
     </body>
 </html>

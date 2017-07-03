@@ -10,4 +10,6 @@ case class StoreImage(
 
 case class FindImage(imageId: Int) extends ImageOp[Option[Image]]
 
+case class GetImageById(imageId: Int) extends ImageOp[Image]
+
 case class GetImageFile(image: Image) extends ImageOp[Path]

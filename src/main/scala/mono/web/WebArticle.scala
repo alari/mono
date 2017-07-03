@@ -78,9 +78,9 @@ object WebArticle {
 
       def readIntOpt(name: String): V[Option[Int]] =
         readStringOpt(name).andThen{
-          case Some(s) ⇒
+          case Some(s) if s.trim != "" ⇒
             Validated.catchOnly[NumberFormatException](Some(s.toInt)).leftMap(e ⇒ NonEmptyList.of(name → e.getMessage))
-          case None ⇒
+          case _ ⇒
             None.validNel
         }
 
