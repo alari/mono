@@ -8,7 +8,7 @@ import doobie.util.transactor.DriverManagerTransactor
 import fs2.util.Attempt
 import monix.eval.Task
 import monix.execution.Scheduler
-import mono.core.alias.{ AliasInMemoryInterpreter, AliasOp }
+import mono.core.alias.{ AliasDoobieInterpreter, AliasInMemoryInterpreter, AliasOp }
 import mono.core.article.{ ArticleOp, ArticlesDoobieInterpreter, ArticlesInMemoryInterpreter }
 import mono.core.person.{ PersonOp, PersonsDoobieInterpreter, PersonsInMemoryInterpreter }
 import mono.core.env.{ EnvConfigInterpreter, EnvOp }
@@ -56,7 +56,8 @@ object Interpret {
     Task.sequence(Seq(
       PersonsDoobieInterpreter.init(xa),
       ImagesDoobieInterpreter.init(xa),
-      ArticlesDoobieInterpreter.init(xa)
+      ArticlesDoobieInterpreter.init(xa),
+      AliasDoobieInterpreter.init(xa)
     )).map(ints ⇒
       log.info("Database Initialized: " + ints))
       .onErrorRecover{
@@ -67,6 +68,6 @@ object Interpret {
     val i0: Op0 ~> Task = new ArticlesDoobieInterpreter(xa) or new PersonsDoobieInterpreter(xa)
     val i1: Op1 ~> Task = new EnvConfigInterpreter() or i0
     val i2: Op2 ~> Task = new ImagesDoobieInterpreter(xa, Paths.get("./images")) or i1
-    new AliasInMemoryInterpreter or i2
+    new AliasDoobieInterpreter(xa) or i2
   }
 }
