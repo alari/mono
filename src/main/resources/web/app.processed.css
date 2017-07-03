@@ -1,0 +1,128 @@
+:root {
+    --base-font-color: #1c1c1c;
+    --body-bg-color: #f5f5f5;
+    --layout-bg-color: #fff;
+    --base-line-height: 1.4;
+    --base-font-size: 112.5%;
+    --base-font-family: Georgia, Times\ New\ Roman, Times, serif;
+    --title-color: var(--base-font-color);
+    --link-color: var(--base-font-color);
+}
+
+*,
+:after,
+:before {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    line-height: var(--base-line-height);
+    background-color: var(--body-bg-color);
+    font-family: var(--base-font-family);
+    font-size: var(--base-font-size);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: bold;
+    color: var(--title-color);
+    font-family: var(--base-font-family);
+}
+
+h1 {
+    font-size: 2.4em;
+}
+
+h2 {
+    font-size: 2em;
+}
+
+h3 {
+    font-size: 1.05em;
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+a:hover {
+    --link-color: #4e4e4e;
+    text-decoration: none;
+}
+
+.layout {
+    margin: 22px auto 0;
+    padding: 46px 70px;
+    max-width: 800px;
+    background-color: var(--layout-bg-color);
+    box-shadow: 0px 6px 12px 3px rgba(0, 0, 0, 0.2);
+}
+
+.article {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    font-size: 18px;
+    line-height: 29px;
+}
+
+.article-title {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    line-height: 1.2em;
+    font-weight: 400;
+}
+
+.article-title>a {
+    color: var(--title-color);
+    text-decoration: none;
+}
+
+.article-title>a:hover {
+    --title-color: #4e4e4e;
+}
+
+.article-cover {
+    margin: 0 -70px;
+    text-align: center;
+    font-size: .8em;
+    color: #797979;
+}
+
+.article-cover>img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.svg-icon {
+    display: -ms-inline-flexbox;
+    display: inline-flex;
+    -ms-flex-item-align: center;
+    align-self: center;
+    position: relative;
+    height: 1em;
+    width: 1em;
+    fill: currentColor;
+}
+
+.svg-icon.svg-baseline {
+    bottom: -0.125em;
+}
+
+.article-footer {
+    display: -ms-flexbox;
+    display: flex;
+    font-size: 0.8em;
+    color: #797979;
+    margin-left: -10px;
+}
+
+.article-footer-item {
+    margin-left: 10px;
+}
