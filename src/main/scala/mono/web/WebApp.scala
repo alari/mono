@@ -18,7 +18,8 @@ import scala.language.higherKinds
 class WebApp[F[_]](implicit A: ArticleOps[F], Au: PersonOps[F], As: AliasOps[F], Im: ImageOps[F], E: EnvOps[F]) extends Web[F] {
 
   override def route(implicit i: F ~> Task): Route =
-    new WebArticle[F].route ~
+    new WebGraphQL[F].route ~
+      new WebArticle[F].route ~
       new WebImage[F].route ~
       new WebAlias[F].route ~
       getFromResourceDirectory("web")

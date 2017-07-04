@@ -27,9 +27,6 @@ object BotState {
    * @param id айдишник статьи
    */
   case class ArticleContext(id: Int) extends BotState
-  case class ArticleTitleContext(id: Int) extends BotState
-  case class ArticleDescriptionContext(id: Int) extends BotState
-  case class ArticleContentContext(id: Int) extends BotState
 
   /**
    * В процессе листания опубликованных статей

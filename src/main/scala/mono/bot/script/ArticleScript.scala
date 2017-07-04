@@ -7,7 +7,7 @@ import mono.core.alias.AliasOps
 import mono.core.article.{ Article, ArticleOps }
 import mono.core.person.PersonOps
 import mono.bot.BotScript.{ Op, Scenario }
-import mono.bot.BotState.{ ArticleContentContext, ArticleContext }
+import mono.bot.BotState.ArticleContext
 import mono.bot._
 import mono.core.env.EnvOps
 import pdi.jwt.JwtClaim
@@ -29,16 +29,6 @@ class ArticleScript(implicit
   private val draftR = "article:([0-9]+):draft".r
 
   override val scenario: Scenario = {
-
-    case (ArticleContentContext(id), File(fileId, Some("text/plain"), _, _, m)) ⇒
-      for {
-        read ← readTextFile(fileId)
-        (_, text) = read
-        _ ← A.setText(id, text)
-        a ← A.getById(id)
-        _ ← B.reply("Сохранили текст", m)
-        s ← showArticleContext(a, m)
-      } yield s
 
     case (state, Command(showR(id), _, m)) ⇒
       A.getById(id.toInt).flatMap{ article ⇒

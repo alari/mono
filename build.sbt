@@ -39,6 +39,9 @@ val icu =  "com.ibm.icu" % "icu4j" % "58.2"
 val akkaStreamTest = "com.typesafe.akka" %% "akka-stream-testkit" % akkaV % Test
 val cats = "org.typelevel" %% "cats" % "0.9.0"
 val scrimage = "com.sksamuel.scrimage" %% "scrimage-core" % "2.1.8"
+val sangria = "org.sangria-graphql" %% "sangria" % "1.2.2"
+val sangriaCirce = "org.sangria-graphql" %% "sangria-circe" % "1.1.0"
+val circeMarshalling = "de.heikoseeberger" %% "akka-http-circe" % "1.17.0"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % akkaHttpV,
@@ -50,6 +53,9 @@ libraryDependencies ++= Seq(
   "io.monix" %% "monix-cats" % monixV,
   "org.tpolecat" %% "doobie-core-cats" % doobieV,
   "org.tpolecat" %% "doobie-postgres-cats" % doobieV,
+  sangria,
+  sangriaCirce,
+  circeMarshalling,
   icu,
   scrimage,
   markdown,
@@ -61,10 +67,10 @@ libraryDependencies ++= Seq(
 
 scalacOptions += "-Ypartial-unification"
 
-//libraryDependencies ++= Seq(
-//  "io.circe" %% "circe-core",
-//  "io.circe" %% "circe-generic",
-//  "io.circe" %% "circe-parser"
-//).map(_ % circeV)
+libraryDependencies ++= Seq(
+  "io.circe" %% "circe-core",
+  "io.circe" %% "circe-generic",
+  "io.circe" %% "circe-parser"
+).map(_ % circeV)
 
 enablePlugins(SbtTwirl)

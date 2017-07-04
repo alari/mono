@@ -1,2 +1,4 @@
 User-agent: *
 Disallow: /edit
+Disallow: /graphql
+Disallow: /graphiql
