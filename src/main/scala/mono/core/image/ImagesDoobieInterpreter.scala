@@ -2,6 +2,7 @@ package mono.core.image
 
 import java.nio.file.Path
 
+import cats.data.NonEmptyList
 import cats.~>
 import doobie.imports.Transactor
 import doobie.util.update.Update0
@@ -27,11 +28,17 @@ object ImagesDoobieInterpreter {
         .update.withUniqueGeneratedKeys("id")
     }
 
-  def findImageQuery(id: Long): Query0[Image] =
-    sql"SELECT id,hash,size,person_id,created_at,sub_type,caption,width,height FROM images WHERE id=$id".query
+  val select: Fragment =
+    sql"SELECT id,hash,size,person_id,created_at,sub_type,caption,width,height FROM images "
+
+  def getImageQuery(id: Long): Query0[Image] =
+    (select ++ fr" WHERE id=$id").query
 
   def findImageByHashQuery(personId: Long, hash: String): Query0[Image] =
-    sql"SELECT id,hash,size,person_id,created_at,sub_type,caption,width,height FROM images WHERE person_id=$personId AND hash=$hash".query
+    (select ++ fr" WHERE person_id=$personId AND hash=$hash").query
+
+  def getImagesQuery(ids: NonEmptyList[Int]): Query0[Image] =
+    (select ++ fr" WHERE " ++ Fragments.in(fr"id", ids)).query
 }
 
 class ImagesDoobieInterpreter(xa: Transactor[Task], baseDir: Path) extends (ImageOp ~> Task) {
@@ -66,10 +73,13 @@ class ImagesDoobieInterpreter(xa: Transactor[Task], baseDir: Path) extends (Imag
       Task.now(baseDir.resolve(image.fileDir).resolve(image.fileName).asInstanceOf[A])
 
     case FindImage(imageId) ⇒
-      findImageQuery(imageId).option.transact(xa).asInstanceOf[Task[A]]
+      getImageQuery(imageId).option.transact(xa).asInstanceOf[Task[A]]
 
     case GetImageById(imageId) ⇒
-      findImageQuery(imageId).unique.transact(xa).asInstanceOf[Task[A]]
+      getImageQuery(imageId).unique.transact(xa).asInstanceOf[Task[A]]
 
+    case GetImagesByIds(imageIds) ⇒
+      NonEmptyList.fromList(imageIds.toList).fold(Task.now(Nil.asInstanceOf[A]))(nel ⇒
+        getImagesQuery(nel).list.transact(xa).asInstanceOf[Task[A]])
   }
 }

@@ -6,13 +6,16 @@ import monix.eval.Task
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.model.StatusCodes.{ BadRequest, InternalServerError, OK }
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
-import mono.api.{ CharacterRepo, SchemaDefinition }
-import sangria.execution.deferred.DeferredResolver
+import mono.api.{ GraphQLContext, GraphQLSchema }
 import sangria.parser.QueryParser
 import sangria.execution.{ ErrorWithResolver, Executor, QueryAnalysisError }
 import sangria.marshalling.circe._
 import io.circe.generic.semiauto._
-import io.circe.{ Decoder, Encoder, Json, JsonNumber }
+import io.circe.{ Decoder, Encoder, Json }
+import mono.core.alias.AliasOps
+import mono.core.article.ArticleOps
+import mono.core.image.ImageOps
+import mono.core.person.PersonOps
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.higherKinds
@@ -26,9 +29,11 @@ object WebGraphQL {
   implicit val encoder: Encoder[Error] = deriveEncoder[Error]
 }
 
-class WebGraphQL[F[_]] extends Web[F] with ErrorAccumulatingCirceSupport {
+class WebGraphQL[F[_]](implicit P: PersonOps[F], A: ArticleOps[F], I: ImageOps[F], Al: AliasOps[F]) extends Web[F] with ErrorAccumulatingCirceSupport {
 
   import WebGraphQL._
+
+  import GraphQLSchema.{ schema, resolver }
 
   override def route(implicit i: F ~> Task): Route =
     (post & path("graphql")) {
@@ -36,14 +41,16 @@ class WebGraphQL[F[_]] extends Web[F] with ErrorAccumulatingCirceSupport {
 
         import command._
 
+        val ctx = GraphQLContext[F]()
+
         QueryParser.parse(query) match {
 
           // query parsed successfully, time to execute it!
           case Success(queryAst) ⇒
-            complete(Executor.execute(SchemaDefinition.StarWarsSchema, queryAst, new CharacterRepo,
+            complete(Executor.execute(schema, queryAst, ctx,
               variables = vars.getOrElse(Json.obj()),
               operationName = operationName,
-              deferredResolver = DeferredResolver.fetchers(SchemaDefinition.characters))
+              deferredResolver = resolver)
               .map(OK → _)
               .recover {
                 case error: QueryAnalysisError ⇒ BadRequest → error.resolveError
