@@ -170,27 +170,48 @@ object GraphQLSchema {
     )
   )
 
+  val Offset = Argument("offset", IntType, description = "Offset")
+  val Limit = Argument("limit", IntType, description = "Limit")
+
+  val MeType: ObjectType[Ctx, Int] = ObjectType(
+    "Me",
+    "Current user context",
+    fields[Ctx, Int](
+      Field("person", PersonType,
+        Some("Current Person"),
+        resolve = c ⇒ persons.defer(c.value)),
+      Field("drafts", ArticlesType,
+        Some("Current Person's drafts"),
+        arguments = Offset :: Limit :: Nil,
+        resolve = c ⇒ c.ctx.fetchDrafts(c arg Offset, c arg Limit))
+    )
+  )
+
   val PersonID = Argument("id", IntType, description = "Person ID")
   val ArticleID = Argument("id", IntType, description = "Article ID")
   val AliasID = Argument("id", StringType, description = "Alias ID")
 
-  val Offset = Argument("offset", IntType, description = "Offset")
-  val Limit = Argument("limit", IntType, description = "Limit")
-
   val Query = ObjectType(
     "Query", fields[Ctx, Unit](
       Field("person", PersonType,
+        Some("Person by id"),
         arguments = PersonID :: Nil,
         resolve = Projector((ctx, f) ⇒ ctx.ctx.getPersonById(ctx arg PersonID))),
       Field("article", ArticleType,
+        Some("Either Article or Draft, by id"),
         arguments = ArticleID :: Nil,
         resolve = Projector((ctx, f) ⇒ ctx.ctx.getArticleById(ctx arg ArticleID))),
       Field("articles", ArticlesType,
+        Some("Last published Articles"),
         arguments = Offset :: Limit :: Nil,
         resolve = ctx ⇒ ctx.ctx.fetchArticles(None, None, ctx arg Offset, ctx arg Limit)),
       Field("alias", AliasType,
+        Some("Tries to resolve alias - short url for an entity"),
         arguments = AliasID :: Nil,
-        resolve = c ⇒ c.ctx.getAliasById(c arg AliasID))
+        resolve = c ⇒ c.ctx.getAliasById(c arg AliasID)),
+      Field("me", OptionType(MeType),
+        Some("Current user, if present"),
+        resolve = c ⇒ c.ctx.currentUserId)
     )
   )
 

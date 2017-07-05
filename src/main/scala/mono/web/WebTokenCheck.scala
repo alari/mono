@@ -1,5 +1,6 @@
 package mono.web
 
+import akka.http.scaladsl.model.headers.{ Authorization, OAuth2BearerToken }
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives._
 import cats.free.Free
@@ -11,6 +12,7 @@ import mono.core.person.{ Person, PersonOps }
 import mono.core.env.EnvOps
 
 import scala.language.higherKinds
+import scala.util.Try
 
 object WebTokenCheck {
 
@@ -19,8 +21,8 @@ object WebTokenCheck {
       onSuccess((for {
         claim ← E.parseToken(token)
         authorOpt ← claim match {
-          case Some(c) if c.issuer.contains("telegram") && c.audience.exists(_.contains(action)) && c.subject.isDefined ⇒
-            Au.findByTelegramId(c.subject.get.toLong)
+          case Some(c) if c.issuer.contains("bot") && c.audience.exists(_.contains(action)) && c.subject.isDefined ⇒
+            Au.getById(c.subject.get.toInt).map(Option(_))
           case v ⇒
             Free.pure[F, Option[Person]](None)
         }
@@ -30,6 +32,18 @@ object WebTokenCheck {
         case None ⇒
           reject
       }
+    }
+
+  def tokenUserOpt[F[_]](implicit E: EnvOps[F], i: F ~> Task, s: Scheduler): Directive1[Option[Int]] =
+    optionalHeaderValueByType[Authorization]().flatMap {
+      case Some(Authorization(OAuth2BearerToken(token))) ⇒
+        onSuccess(
+          E.parseToken(token)
+          .map(_.flatMap(_.subject).flatMap(v ⇒ Try(v.toInt).toOption)).foldMap(i)
+          .runAsync
+        )
+      case _ ⇒
+        provide(Option.empty[Int])
     }
 
 }

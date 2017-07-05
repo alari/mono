@@ -93,14 +93,16 @@ object ArticleScript {
 
   def articleContextButtons(article: Article, meta: Incoming.Meta)(implicit
     As: AliasOps[BotScript.Op],
+                                                                   P: PersonOps[BotScript.Op],
                                                                    B: BotOps[BotScript.Op],
                                                                    E: EnvOps[BotScript.Op]): Free[BotScript.Op, Seq[Seq[Inline.Button]]] = for {
     url ← As.aliasHref(article, article.id.toString)
+    user ← P.ensureTelegram(meta.chat.id, meta.chat.title.getOrElse("???"))
     host ← E.readHost()
     token ← E.issueToken(
       JwtClaim(
-        issuer = Some("telegram"),
-        subject = Some(meta.chat.id.toString),
+        issuer = Some("bot"),
+        subject = Some(user.id.toString),
         audience = Some(Set(s"edit/${article.id}")),
         issuedAt = Some(Instant.now().getEpochSecond)
       )

@@ -12,6 +12,8 @@ import mono.core.person.{ Person, PersonOps }
 import scala.language.higherKinds
 
 abstract class GraphQLContext {
+  private[api] def currentUserId: Option[Int]
+
   def getPersonById(id: Int): Task[Person]
 
   def getPersonsByIds(ids: Seq[Int]): Task[Seq[Person]]
@@ -21,6 +23,8 @@ abstract class GraphQLContext {
   def getArticleText(article: Article): Task[String]
 
   def fetchArticles(authorId: Option[Int], q: Option[String], offset: Int, limit: Int): Task[Articles]
+
+  def fetchDrafts(offset: Int, limit: Int): Task[Articles]
 
   def getImageById(id: Int): Task[Image]
 
@@ -35,7 +39,7 @@ object GraphQLContext extends MonixToCatsConversions {
   private implicit def freeToTask[F[_], V](f: Free[F, V])(implicit i: F ~> Task): Task[V] =
     f.foldMap(i)
 
-  def apply[F[_]]()(
+  def apply[F[_]](_currentUserId: Option[Int])(
     implicit
     P:  PersonOps[F],
     A:  ArticleOps[F],
@@ -43,22 +47,34 @@ object GraphQLContext extends MonixToCatsConversions {
     Al: AliasOps[F],
     i:  F ~> Task
   ): GraphQLContext = new GraphQLContext {
+    override private[api] def currentUserId = _currentUserId
+
     override def getPersonById(id: Int): Task[Person] =
       P.getById(id)
 
     override def getPersonsByIds(ids: Seq[Int]): Task[Seq[Person]] =
       P.getByIds(ids.toSet).map(vs ⇒ ids.map(vs))
 
-    // TODO: check permissions
+    // TODO: use permissions control lib
     override def getArticleById(id: Int): Task[Article] =
-      A.getById(id)
+      A.getById(id).map { a ⇒
+        if (!a.isDraft || currentUserId.exists(a.authorIds.toList.contains)) a
+        else throw new IllegalAccessError("Inaccessible")
+      }
 
-    // TODO: check permissions
+    // TODO: use permissions control lib
     override def getArticleText(article: Article): Task[String] =
-      A.getText(article.id)
+      if (!article.isDraft || currentUserId.exists(article.authorIds.toList.contains)) A.getText(article.id)
+      else throw new IllegalAccessError("Inaccessible")
 
     override def fetchArticles(authorId: Option[Int], q: Option[String], offset: Int, limit: Int): Task[Articles] =
       A.fetch(authorId, q, offset, limit)
+
+    override def fetchDrafts(offset: Int, limit: Int): Task[Articles] =
+      currentUserId match {
+        case Some(uid) ⇒ A.fetchDrafts(uid, offset, limit)
+        case None      ⇒ Task.raiseError(new IllegalAccessError("Inaccessible"))
+      }
 
     override def getImageById(id: Int): Task[Image] =
       I.getById(id)

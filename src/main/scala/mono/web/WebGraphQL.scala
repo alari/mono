@@ -14,10 +14,11 @@ import io.circe.generic.semiauto._
 import io.circe.{ Decoder, Encoder, Json }
 import mono.core.alias.AliasOps
 import mono.core.article.ArticleOps
+import mono.core.env.EnvOps
 import mono.core.image.ImageOps
 import mono.core.person.PersonOps
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import monix.execution.Scheduler.Implicits.global
 import scala.language.higherKinds
 import scala.util.{ Failure, Success }
 
@@ -29,19 +30,20 @@ object WebGraphQL {
   implicit val encoder: Encoder[Error] = deriveEncoder[Error]
 }
 
-class WebGraphQL[F[_]](implicit P: PersonOps[F], A: ArticleOps[F], I: ImageOps[F], Al: AliasOps[F]) extends Web[F] with ErrorAccumulatingCirceSupport {
+class WebGraphQL[F[_]](implicit P: PersonOps[F], A: ArticleOps[F], I: ImageOps[F], Al: AliasOps[F], E: EnvOps[F]) extends Web[F] with ErrorAccumulatingCirceSupport {
 
   import WebGraphQL._
+  import WebTokenCheck.tokenUserOpt
 
   import GraphQLSchema.{ schema, resolver }
 
   override def route(implicit i: F ~> Task): Route =
-    (post & path("graphql")) {
+    (post & path("graphql") & tokenUserOpt[F]) { userIdOpt ⇒
       entity(as[Command]) { command ⇒
 
         import command._
 
-        val ctx = GraphQLContext[F]()
+        val ctx = GraphQLContext[F](userIdOpt)
 
         QueryParser.parse(query) match {
 
