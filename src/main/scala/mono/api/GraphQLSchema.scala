@@ -80,9 +80,9 @@ object GraphQLSchema {
       Field("createdAt", LongType,
         Some("Created timestamp, in epoch millis"),
         resolve = _.value.createdAt.toEpochMilli),
-      Field("alias", OptionType(AliasType),
+      Field("alias", OptionType(StringType),
         Some("Person's alias, to be used in URL"),
-        resolve = c ⇒ aliases.deferOpt(c.value)),
+        resolve = c ⇒ DeferredValue(aliases.deferOpt(c.value)).map(_.map(_.id))),
       Field("articles", ArticlesType,
         arguments = Offset :: Limit :: Nil,
         resolve = c ⇒ c.ctx.fetchArticles(Some(c.value.id), None, c arg Offset, c arg Limit))
@@ -129,9 +129,9 @@ object GraphQLSchema {
       Field("text", StringType,
         Some("Full Article's text, in markdown"),
         resolve = c ⇒ c.ctx.getArticleText(c.value)),
-      Field("alias", OptionType(AliasType),
+      Field("alias", OptionType(StringType),
         Some("Article's alias, to be used in URL"),
-        resolve = c ⇒ aliases.deferOpt(c.value))
+        resolve = c ⇒ DeferredValue(aliases.deferOpt(c.value)).map(_.map(_.id)))
     )
   )
 
