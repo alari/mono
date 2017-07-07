@@ -20,7 +20,7 @@ class NewArticleScript(implicit
     for {
       au ← Au.ensureTelegram(m.chat.id, m.chat.title.getOrElse("??? " + m.chat.id))
       _ ← m.chat.alias.fold(Free.pure[BotScript.Op, Option[Alias]](None))(alias ⇒ As.tryPointTo(alias, au, force = false))
-      a ← A.create(au.id, title, Instant.now())
+      a ← A.create(au.id, "ru", title, Instant.now())
       _ ← showArticleContext(a, m)
     } yield a
 

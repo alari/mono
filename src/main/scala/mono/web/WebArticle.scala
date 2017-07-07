@@ -1,5 +1,7 @@
 package mono.web
 
+import java.time.Instant
+
 import akka.http.scaladsl.model.FormData
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -92,7 +94,7 @@ object WebArticle {
       (readString("title") |@| readStringOpt("headline") |@| readIntOpt("publishedAt")).map { (title, headline, publishedAt) ⇒
         if (article.title != title ||
           article.headline != headline ||
-          article.publishedYear != publishedAt) A.update(article.id, title, headline, publishedAt)
+          article.publishedYear != publishedAt) A.update(article.id, title, headline, None, publishedAt)
         else Free.pure[F, Article](article)
       }.sequence
     }

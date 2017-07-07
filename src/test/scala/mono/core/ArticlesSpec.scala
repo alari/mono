@@ -36,7 +36,7 @@ class ArticlesSpec extends OpsSpec[ArticlesSpec.Command] {
       "create new draft" in {
         val (a, d) = (for {
           author ← persons.ensureTelegram(Random.nextLong, "test author")
-          draft ← articles.create(author.id, "test title", Instant.now())
+          draft ← articles.create(author.id, "ru", "test title", Instant.now())
         } yield (author, draft)).unsafeValue
 
         d.authorIds.head shouldBe a.id
@@ -58,7 +58,7 @@ class ArticlesSpec extends OpsSpec[ArticlesSpec.Command] {
       "publish and hide draft" in {
         val (a, d) = (for {
           author ← persons.ensureTelegram(Random.nextLong, "test author")
-          draft ← articles.create(author.id, "test title", Instant.now())
+          draft ← articles.create(author.id, "ru", "test title", Instant.now())
           article ← articles.publishDraft(draft.id)
         } yield (author, article)).unsafeValue
 
@@ -87,7 +87,7 @@ class ArticlesSpec extends OpsSpec[ArticlesSpec.Command] {
       "add and remove image" in {
         val (a, d) = (for {
           author ← persons.ensureTelegram(Random.nextLong, "test author")
-          draft ← articles.create(author.id, "test title", Instant.now())
+          draft ← articles.create(author.id, "ru", "test title", Instant.now())
         } yield (author, draft)).unsafeValue
 
         d.imageIds should be('empty)

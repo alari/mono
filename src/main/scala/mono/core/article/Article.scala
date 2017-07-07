@@ -33,8 +33,11 @@ case class Article(
   id:        Int,
   authorIds: NonEmptyList[Int],
 
-  title:    String,
-  headline: Option[String],
+  lang: String,
+
+  title:       String,
+  headline:    Option[String],
+  description: Option[String],
 
   coverId:  Option[Int],
   imageIds: List[Int],
@@ -43,6 +46,7 @@ case class Article(
   modifiedAt: Instant,
 
   publishedYear: Option[Int],
+  publishedAt:   Option[Instant],
 
   version: Int,
 

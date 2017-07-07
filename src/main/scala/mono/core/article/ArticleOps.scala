@@ -11,10 +11,11 @@ class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {
 
   def create(
     authorId:  Int,
+    lang:      String,
     title:     String,
     createdAt: Instant
   ): Free[F, Article] =
-    inject[ArticleOp, F](CreateArticle(authorId, title, createdAt))
+    inject[ArticleOp, F](CreateArticle(authorId, lang, title, createdAt))
 
   def fetch(
     authorId: Option[Int],
@@ -34,8 +35,8 @@ class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {
   ): Free[F, Articles] =
     inject[ArticleOp, F](FetchDrafts(authorId, offset, limit))
 
-  def publishDraft(id: Int, publishedYear: Int = LocalDateTime.now().getYear): Free[F, Article] =
-    inject[ArticleOp, F](PublishDraft(id, publishedYear))
+  def publishDraft(id: Int, publishedYear: Int = LocalDateTime.now().getYear, publishedAt: Instant = Instant.now()): Free[F, Article] =
+    inject[ArticleOp, F](PublishDraft(id, publishedYear, publishedAt))
 
   def draftArticle(id: Int): Free[F, Article] =
     inject[ArticleOp, F](DraftArticle(id))
@@ -49,8 +50,8 @@ class ArticleOps[F[_]](implicit I: Inject[ArticleOp, F]) {
   def setCover(id: Int, coverId: Option[Int]): Free[F, Article] =
     inject[ArticleOp, F](SetCover(id, coverId))
 
-  def update(id: Int, title: String, headline: Option[String], publishedAt: Option[Int]): Free[F, Article] =
-    inject[ArticleOp, F](UpdateArticle(id, title, headline, publishedAt))
+  def update(id: Int, title: String, headline: Option[String], description: Option[String], publishedYear: Option[Int]): Free[F, Article] =
+    inject[ArticleOp, F](UpdateArticle(id, title, headline, description, publishedYear))
 
   def addImage(id: Int, imageId: Int): Free[F, Article] =
     inject[ArticleOp, F](AddImage(id, imageId))

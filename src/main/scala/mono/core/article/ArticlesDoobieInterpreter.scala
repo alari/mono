@@ -12,24 +12,57 @@ import cats.instances._
 import cats.implicits._
 import fs2.interop.cats._
 import doobie.postgres.imports._
+import doobie.util.log.{ ExecFailure, ProcessingFailure, Success }
 
 object ArticlesDoobieInterpreter {
   implicit private val nelMeta: Meta[NonEmptyList[Int]] =
     Meta[List[Int]].nxmap[NonEmptyList[Int]](NonEmptyList.fromListUnsafe, _.toList)
 
-  implicit private val han = LogHandler.jdkLogHandler
+  implicit private val han = LogHandler{
+    case Success(s, a, e1, e2) ⇒
+      println(Console.BLUE + s"""Successful Statement Execution:
+                        |
+            |  ${s.lines.dropWhile(_.trim.isEmpty).mkString("\n  ")}
+                        |
+            | arguments = [${a.mkString(", ")}]
+                        |   elapsed = ${e1.toMillis} ms exec + ${e2.toMillis} ms processing (${(e1 + e2).toMillis} ms total)
+          """.stripMargin + Console.RESET)
+
+    case ProcessingFailure(s, a, e1, e2, t) ⇒
+      println(Console.RED + s"""Failed Resultset Processing:
+                          |
+            |  ${s.lines.dropWhile(_.trim.isEmpty).mkString("\n  ")}
+                          |
+            | arguments = [${a.mkString(", ")}]
+                          |   elapsed = ${e1.toMillis} ms exec + ${e2.toMillis} ms processing (failed) (${(e1 + e2).toMillis} ms total)
+                          |   failure = ${t.getMessage}
+          """.stripMargin + Console.RESET)
+
+    case ExecFailure(s, a, e1, t) ⇒
+      println(Console.CYAN + s"""Failed Statement Execution:
+                          |
+            |  ${s.lines.dropWhile(_.trim.isEmpty).mkString("\n  ")}
+                          |
+            | arguments = [${a.mkString(", ")}]
+                          |   elapsed = ${e1.toMillis} ms exec (failed)
+                          |   failure = ${t.getMessage}
+          """.stripMargin + Console.RESET)
+  }
 
   private val createArticlesTable: Update0 =
     sql"""CREATE TABLE IF NOT EXISTS articles(
                 id SERIAL PRIMARY KEY,
                 author_ids INTEGER[] NOT NULL,
+                lang VARCHAR(8) NOT NULL,
                 title VARCHAR(512) NOT NULL,
                 headline TEXT,
+                description TEXT,
                 cover_id INTEGER REFERENCES images,
                 image_ids INTEGER[] NOT NULL DEFAULT ARRAY[]::integer[],
                 created_at TIMESTAMP NOT NULL,
                 modified_at TIMESTAMP NOT NULL,
                 published_year SMALLINT,
+                published_at TIMESTAMP,
                 version SMALLINT DEFAULT 0,
                 is_draft BOOLEAN NOT NULL,
                 text TEXT
@@ -53,12 +86,12 @@ object ArticlesDoobieInterpreter {
       else fr" AND author_ids @> $authorIds ")
   }
 
-  def insertArticle(authorIds: NonEmptyList[Int], title: String, createdAt: Instant): ConnectionIO[Int] =
-    sql"INSERT INTO articles(author_ids, title, created_at, modified_at, is_draft) VALUES($authorIds, $title, $createdAt, current_timestamp, TRUE )"
+  def insertArticle(authorIds: NonEmptyList[Int], lang: String, title: String, createdAt: Instant): ConnectionIO[Int] =
+    sql"INSERT INTO articles(author_ids, lang, title, created_at, modified_at, is_draft) VALUES($authorIds, $lang, $title, $createdAt, current_timestamp, TRUE )"
       .update.withUniqueGeneratedKeys("id")
 
   val selectArticle: Fragment =
-    sql"SELECT id,author_ids,title,headline,cover_id,image_ids,created_at,modified_at,published_year,version,is_draft FROM articles "
+    sql"SELECT id,author_ids,lang,title,headline,description,cover_id,image_ids,created_at,modified_at,published_year,published_at,version,is_draft FROM articles "
 
   def query(filter: Filter, offset: Int, limit: Int): Query0[Article] =
     (selectArticle ++ filter.fr ++ fr" OFFSET $offset LIMIT $limit").query[Article]
@@ -72,8 +105,8 @@ object ArticlesDoobieInterpreter {
   def draftArticle(id: Int): Update0 =
     sql"UPDATE articles SET is_draft=TRUE, modified_at=current_timestamp WHERE id=$id".update
 
-  def publishDraft(id: Int, year: Int): Update0 =
-    sql"UPDATE articles SET is_draft=FALSE, published_year=COALESCE(published_year, $year), modified_at=current_timestamp WHERE id=$id".update
+  def publishDraft(id: Int, year: Int, publishedAt: Instant): Update0 =
+    sql"UPDATE articles SET is_draft=FALSE, published_year=COALESCE(published_year, $year), published_at=COALESCE(published_at, $publishedAt), modified_at=current_timestamp WHERE id=$id".update
 
   def getArticleText(id: Int): Query0[Option[String]] =
     sql"SELECT text FROM articles WHERE id=$id LIMIT 1".query
@@ -84,8 +117,8 @@ object ArticlesDoobieInterpreter {
   def setCoverId(id: Int, value: Option[Int]): Update0 =
     sql"UPDATE articles SET cover_id=$value, version=version+1, modified_at=current_timestamp WHERE id=$id".update
 
-  def update(id: Int, title: String, headline: Option[String], publishedYear: Option[Int]): Update0 =
-    sql"UPDATE articles SET title = $title, headline = $headline, published_year = $publishedYear, version = version+1, modified_at=current_timestamp WHERE id=$id".update
+  def update(id: Int, title: String, headline: Option[String], description: Option[String], publishedYear: Option[Int]): Update0 =
+    sql"UPDATE articles SET title = $title, headline = $headline, description=$description, published_year = $publishedYear, version = version+1, modified_at=current_timestamp WHERE id=$id".update
 
   def addImage(id: Int, imageId: Int): Update0 = {
     val imageIds = imageId :: Nil
@@ -106,9 +139,9 @@ class ArticlesDoobieInterpreter(xa: Transactor[Task]) extends (ArticleOp ~> Task
   import ArticlesDoobieInterpreter._
 
   override def apply[A](fa: ArticleOp[A]): Task[A] = (fa match {
-    case CreateArticle(user, title, createdAt) ⇒
+    case CreateArticle(user, lang, title, createdAt) ⇒
       (for {
-        id ← insertArticle(NonEmptyList.of(user), title, createdAt)
+        id ← insertArticle(NonEmptyList.of(user), lang, title, createdAt)
         article ← getArticle(id).unique
       } yield article).transact(xa)
 
@@ -130,9 +163,9 @@ class ArticlesDoobieInterpreter(xa: Transactor[Task]) extends (ArticleOp ~> Task
         cnt ← count(filter).unique
       } yield Articles(drafts, cnt)).transact(xa)
 
-    case PublishDraft(i, y) ⇒
+    case PublishDraft(i, y, publishedAt) ⇒
       (for {
-        _ ← publishDraft(i, y).run
+        _ ← publishDraft(i, y, publishedAt).run
         a ← getArticle(i).unique
       } yield a).transact(xa)
 
@@ -154,9 +187,9 @@ class ArticlesDoobieInterpreter(xa: Transactor[Task]) extends (ArticleOp ~> Task
         a ← getArticle(i).unique
       } yield a).transact(xa)
 
-    case UpdateArticle(i, title, headline, publishedAt) ⇒
+    case UpdateArticle(i, title, headline, description, publishedYear) ⇒
       (for {
-        _ ← update(i, title, headline, publishedAt).run
+        _ ← update(i, title, headline, description, publishedYear).run
         a ← getArticle(i).unique
       } yield a).transact(xa)
 
