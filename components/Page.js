@@ -11,7 +11,11 @@ export default ({ title, children }) =>
     </Head>
     <header>
       <Link href="/">
-        <a>Mono(noke)</a>
+        <a>Mono(noke )
+
+
+
+                    </a>
       </Link>
     </header>
     {children}
