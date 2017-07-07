@@ -1,5 +1,7 @@
 package mono.api
 
+import java.util.UUID
+
 import monix.eval.Task
 import mono.core.person.Person
 import sangria.schema._
@@ -215,5 +217,13 @@ object GraphQLSchema {
     )
   )
 
-  val schema = Schema(Query)
+  val mutations = ObjectType(
+    "Mutations", fields[Ctx, Unit](
+      Field("getTelegramLoginToken", StringType,
+        resolve = _ ⇒ UUID.randomUUID().toString)
+    )
+  )
+
+  val schema = Schema(Query, Some(mutations))
+
 }

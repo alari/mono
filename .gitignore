@@ -3,3 +3,5 @@ bot.token
 target
 project/project
 /images
+.next
+node_modules

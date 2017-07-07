@@ -51,6 +51,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-stream" % akkaV,
   "info.mukel" %% "telegrambot4s" % "2.9.5",
   "com.pauldijou" %% "jwt-circe" % "0.13.0",
+  "ch.megard" %% "akka-http-cors" % "0.2.1",
   cats,
   "io.monix" %% "monix" % monixV,
   "io.monix" %% "monix-cats" % monixV,

@@ -17,6 +17,7 @@ import mono.core.article.ArticleOps
 import mono.core.env.EnvOps
 import mono.core.image.ImageOps
 import mono.core.person.PersonOps
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 
 import monix.execution.Scheduler.Implicits.global
 import scala.language.higherKinds
@@ -38,32 +39,33 @@ class WebGraphQL[F[_]](implicit P: PersonOps[F], A: ArticleOps[F], I: ImageOps[F
   import GraphQLSchema.{ schema, resolver }
 
   override def route(implicit i: F ~> Task): Route =
-    (post & path("graphql") & tokenUserOpt[F]) { userIdOpt ⇒
-      entity(as[Command]) { command ⇒
+    cors() {
+      (post & path("graphql") & tokenUserOpt[F]) { userIdOpt ⇒
+        entity(as[Command]) { command ⇒
 
-        import command._
+          import command._
 
-        val ctx = GraphQLContext[F](userIdOpt)
+          val ctx = GraphQLContext[F](userIdOpt)
 
-        QueryParser.parse(query) match {
+          QueryParser.parse(query) match {
 
-          // query parsed successfully, time to execute it!
-          case Success(queryAst) ⇒
-            complete(Executor.execute(schema, queryAst, ctx,
-              variables = vars.getOrElse(Json.obj()),
-              operationName = operationName,
-              deferredResolver = resolver)
-              .map(OK → _)
-              .recover {
-                case error: QueryAnalysisError ⇒ BadRequest → error.resolveError
-                case error: ErrorWithResolver  ⇒ InternalServerError → error.resolveError
-              })
+            // query parsed successfully, time to execute it!
+            case Success(queryAst) ⇒
+              complete(Executor.execute(schema, queryAst, ctx,
+                variables = vars.getOrElse(Json.obj()),
+                operationName = operationName,
+                deferredResolver = resolver)
+                .map(OK → _)
+                .recover {
+                  case error: QueryAnalysisError ⇒ BadRequest → error.resolveError
+                  case error: ErrorWithResolver  ⇒ InternalServerError → error.resolveError
+                })
 
-          // can't parse GraphQL query, return error
-          case Failure(error) ⇒
-            complete(BadRequest, Error(error.getMessage))
+            // can't parse GraphQL query, return error
+            case Failure(error) ⇒
+              complete(BadRequest, Error(error.getMessage))
+          }
         }
       }
     }
-
 }
