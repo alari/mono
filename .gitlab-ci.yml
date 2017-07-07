@@ -1,0 +1,62 @@
+stages:
+  - build
+  - release
+
+variables:
+  FRONT_TAG: $CI_REGISTRY_IMAGE:front-$CI_COMMIT_REF_NAME
+  BACK_TAG: $CI_REGISTRY_IMAGE:back-$CI_COMMIT_REF_NAME
+
+build_front:
+  image: node:latest
+  stage: build
+  artifacts:
+    name: front-$CI_COMMIT_SHA
+    expire_in: 1 week
+    paths:
+      - node_modules
+      - .next
+  script:
+    - npm install
+    - npm run build
+
+release_front:
+  image: docker:latest
+  stage: release
+  services:
+    - docker:dind
+  dependencies:
+    - build_front
+  tags:
+    - docker
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t $FRONT_TAG -t $CI_REGISTRY_IMAGE:front-$CI_COMMIT_SHA .
+    - docker push $FRONT_TAG $CI_REGISTRY_IMAGE:front-$CI_COMMIT_SHA
+
+
+build_scala:
+  image: bigtruedata/sbt
+  stage: build
+  artifacts:
+    name: scala-$CI_COMMIT_SHA
+    expire_in: 1 week
+    paths:
+      - target
+  script:
+    - sbt docker:stage
+
+release_scala:
+  image: docker:latest
+  stage: release
+  services:
+    - docker:dind
+  dependencies:
+    - build_front
+  tags:
+    - docker
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - cd target/docker/stage
+    - docker build -t $BACK_TAG -t $CI_REGISTRY_IMAGE:back-$CI_COMMIT_SHA .
+    - docker push $BACK_TAG $CI_REGISTRY_IMAGE:back-$CI_COMMIT_SHA
+

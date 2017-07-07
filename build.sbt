@@ -79,3 +79,11 @@ libraryDependencies ++= Seq(
 ).map(_ % circeV)
 
 enablePlugins(SbtTwirl)
+
+enablePlugins(DockerPlugin)
+
+enablePlugins(JavaAppPackaging)
+
+dockerBaseImage := "isuper/java-oracle"
+
+dockerExposedPorts := Seq(9000)
