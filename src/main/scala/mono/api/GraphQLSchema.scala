@@ -110,7 +110,7 @@ object GraphQLSchema {
       Field("headline", OptionType(StringType),
         Some("Headline or sub-caption of the Article"),
         resolve = _.value.headline),
-      Field("headline", OptionType(StringType),
+      Field("description", OptionType(StringType),
         Some("Description should be used in feeds and social sharing"),
         resolve = _.value.description),
       Field("cover", OptionType(ImageType),

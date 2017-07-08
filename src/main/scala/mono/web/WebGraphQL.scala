@@ -18,13 +18,14 @@ import mono.core.env.EnvOps
 import mono.core.image.ImageOps
 import mono.core.person.PersonOps
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
-
 import monix.execution.Scheduler.Implicits.global
+import org.slf4j.LoggerFactory
+
 import scala.language.higherKinds
 import scala.util.{ Failure, Success }
 
 object WebGraphQL {
-  case class Command(query: String, operationName: Option[String], vars: Option[Json])
+  case class Command(query: String, operationName: Option[String], variables: Option[Json])
   implicit val decoder: Decoder[Command] = deriveDecoder[Command]
 
   case class Error(error: String)
@@ -32,6 +33,8 @@ object WebGraphQL {
 }
 
 class WebGraphQL[F[_]](implicit P: PersonOps[F], A: ArticleOps[F], I: ImageOps[F], Al: AliasOps[F], E: EnvOps[F]) extends Web[F] with ErrorAccumulatingCirceSupport {
+
+  private val log = LoggerFactory.getLogger(getClass)
 
   import WebGraphQL._
   import WebTokenCheck.tokenUserOpt
@@ -43,6 +46,8 @@ class WebGraphQL[F[_]](implicit P: PersonOps[F], A: ArticleOps[F], I: ImageOps[F
       (post & path("graphql") & tokenUserOpt[F]) { userIdOpt ⇒
         entity(as[Command]) { command ⇒
 
+          log.debug("Exec: {}", command)
+
           import command._
 
           val ctx = GraphQLContext[F](userIdOpt)
@@ -52,7 +57,7 @@ class WebGraphQL[F[_]](implicit P: PersonOps[F], A: ArticleOps[F], I: ImageOps[F
             // query parsed successfully, time to execute it!
             case Success(queryAst) ⇒
               complete(Executor.execute(schema, queryAst, ctx,
-                variables = vars.getOrElse(Json.obj()),
+                variables = variables.getOrElse(Json.obj()),
                 operationName = operationName,
                 deferredResolver = resolver)
                 .map(OK → _)

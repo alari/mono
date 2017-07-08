@@ -37,26 +37,35 @@ const Index = ({ data: { articles: { count, values } } }) => {
   );
 };
 
+const ArticlesQuery = gql`
+  query ArticlesQuery($offset: Int!, $limit: Int!) {
+    articles(offset: $offset, limit: $limit) {
+      count
+      values {
+        id
+        alias
+        title
+        authors {
+          id
+          alias
+          name
+        }
+      }
+    }
+  }
+`;
+
 export default compose(
   // withData gives us server-side graphql queries before rendering
   withData,
   // withApollo exposes `this.props.client` used when logging out
   withApollo,
-  graphql(gql`
-    {
-      articles(offset: 0, limit: 10) {
-        count
-        values {
-          id
-          alias
-          title
-          authors {
-            id
-            alias
-            name
-          }
-        }
-      }
+  graphql(ArticlesQuery, {
+    options: (props) => {
+      console.log("GET: ", props)
+      return ({
+        variables: {offset: 0, limit: 10}
+      })
     }
-  `)
+  })
 )(Index);
