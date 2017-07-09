@@ -226,13 +226,26 @@ object GraphQLSchema {
     )
   )
 
-  val mutations = ObjectType(
-    "Mutations", fields[Ctx, Unit](
+  val Token = Argument("token", StringType, description = "String Token")
+
+  import monix.execution.Scheduler.Implicits.global
+  import monix.reactive.Observable
+  import sangria.streaming.monix._
+  import scala.concurrent.duration._
+
+  val SubscriptionType = ObjectType("Subscription", fields[Ctx, Unit](
+    Field.subs("repeat", StringType,
+      arguments = Token :: Nil,
+      resolve = c ⇒ Observable.interval(1.second).map(v ⇒ s"REPLY$v: " + (c arg Token)).map(Action(_)))
+  ))
+
+  val mutation = ObjectType(
+    "Mutation", fields[Ctx, Unit](
       Field("getTelegramLoginToken", StringType,
         resolve = _ ⇒ UUID.randomUUID().toString)
     )
   )
 
-  val schema = Schema(Query, Some(mutations))
+  val schema = Schema(Query, mutation = Some(mutation), subscription = Some(SubscriptionType))
 
 }

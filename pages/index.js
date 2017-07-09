@@ -4,13 +4,15 @@ import Link from "next/link";
 import { graphql, withApollo, compose } from "react-apollo";
 import gql from "graphql-tag";
 
+import TelegramAuthButton from "../components/TelegramAuthButton"
+
 import withData from "../lib/with-data";
 
 const Index = ({ data: { articles: { count, values } } }) => {
   return (
     <Page title="Mono(noke) Index">
       <h1>
-        Articles: {count}
+        Articles: {count} | <TelegramAuthButton/>
       </h1>
       {values.map(article =>
         <article id={article.id}>
@@ -61,11 +63,11 @@ export default compose(
   // withApollo exposes `this.props.client` used when logging out
   withApollo,
   graphql(ArticlesQuery, {
-    options: (props) => {
-      console.log("GET: ", props)
-      return ({
-        variables: {offset: 0, limit: 10}
-      })
-    }
+    options: props => ({
+      variables: {
+        offset: props.url.query.page ? props.url.query.page * 10 : 0,
+        limit: 10
+      }
+    })
   })
 )(Index);
