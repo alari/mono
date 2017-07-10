@@ -5,11 +5,13 @@ import java.util.UUID
 import monix.eval.Task
 import mono.core.person.Person
 import sangria.schema._
-import monix.execution.Scheduler.Implicits.global
 import mono.core.alias.{ Alias, AliasPointer }
 import mono.core.article.{ Article, Articles }
 import mono.core.image.Image
 import sangria.execution.deferred.{ DeferredResolver, Fetcher, HasId }
+
+import monix.execution.Scheduler.Implicits.global
+import sangria.streaming.monix._
 
 import scala.language.implicitConversions
 import scala.language.higherKinds
@@ -228,15 +230,14 @@ object GraphQLSchema {
 
   val Token = Argument("token", StringType, description = "String Token")
 
-  import monix.execution.Scheduler.Implicits.global
-  import monix.reactive.Observable
-  import sangria.streaming.monix._
-  import scala.concurrent.duration._
+  val TokenType = ObjectType("Token", fields[Ctx, String](
+    Field("token", StringType, resolve = _.value)
+  ))
 
   val SubscriptionType = ObjectType("Subscription", fields[Ctx, Unit](
-    Field.subs("repeat", StringType,
+    Field.subs("trackTelegramAuth", TokenType,
       arguments = Token :: Nil,
-      resolve = c ⇒ Observable.interval(1.second).map(v ⇒ s"REPLY$v: " + (c arg Token)).map(Action(_)))
+      resolve = c ⇒ c.ctx.trackTelegramAuth(c arg Token).map(Action(_)))
   ))
 
   val mutation = ObjectType(

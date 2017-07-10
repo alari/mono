@@ -9,6 +9,7 @@ import mono.core.article.ArticleOps
 import mono.core.person.PersonOps
 import mono.bot.script.Script._
 import mono.bot.script._
+import mono.core.bus.EventBusOps
 import mono.core.env.EnvOps
 
 object BotScript {
@@ -21,7 +22,8 @@ object BotScript {
               A:  ArticleOps[BotScript.Op],
               Au: PersonOps[BotScript.Op],
               Ao: AliasOps[BotScript.Op],
-              E:  EnvOps[BotScript.Op]): (BotState, Incoming) ⇒ Free[Op, BotState] = {
+              E:  EnvOps[BotScript.Op],
+              Eb: EventBusOps[BotScript.Op]): (BotState, Incoming) ⇒ Free[Op, BotState] = {
 
     val script: Script =
       NewArticleScript() |+| FetchDraftsScript() |+| FetchArticlesScript() |+| ArticleScript() |+| ArticleImageScript() |+| AuthScript() |+| HelpScript()

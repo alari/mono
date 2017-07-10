@@ -36,7 +36,9 @@ class CancelableBus[T](bufferSize: Int = 8, defaultTimeout: FiniteDuration = 10.
   def subscription(id: String, timeout: FiniteDuration = defaultTimeout): Option[Observable[T]] = subscriptions.get(id).map(_._1).map { obs ⇒
     obs
       .doOnTerminate(_ ⇒ scheduleCancel(id, timeout))
-      .doOnSubscribe(() ⇒ delayedCancels.remove(id).foreach(_.cancel()))
+      .doOnSubscribe{ () ⇒
+        delayedCancels.remove(id).foreach(_.cancel())
+      }
   }
 
   private def scheduleCancel(id: String, timeout: FiniteDuration): CancelableFuture[Unit] =

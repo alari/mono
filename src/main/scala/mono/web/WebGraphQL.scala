@@ -4,7 +4,7 @@ import akka.http.scaladsl.server.Route
 import cats.~>
 import monix.eval.Task
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.model.StatusCodes.{ BadRequest, InternalServerError, OK, NotFound }
+import akka.http.scaladsl.model.StatusCodes.{ BadRequest, InternalServerError, NotFound, OK }
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.stream.scaladsl.Source
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
@@ -22,7 +22,7 @@ import mono.core.person.PersonOps
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 import monix.execution.Cancelable
 import monix.execution.Scheduler.Implicits.global
-import mono.core.bus.CancelableBus
+import mono.core.bus.{ CancelableBus, EventBusOps }
 import org.slf4j.LoggerFactory
 import sangria.ast.OperationType
 
@@ -38,7 +38,7 @@ object WebGraphQL {
   implicit val encoder: Encoder[Error] = deriveEncoder[Error]
 }
 
-class WebGraphQL[F[_]](keepAlive: FiniteDuration = 10.seconds)(implicit P: PersonOps[F], A: ArticleOps[F], I: ImageOps[F], Al: AliasOps[F], E: EnvOps[F]) extends Web[F] with ErrorAccumulatingCirceSupport {
+class WebGraphQL[F[_]](keepAlive: FiniteDuration = 10.seconds)(implicit P: PersonOps[F], A: ArticleOps[F], I: ImageOps[F], Al: AliasOps[F], E: EnvOps[F], Eb: EventBusOps[F]) extends Web[F] with ErrorAccumulatingCirceSupport {
 
   private val log = LoggerFactory.getLogger(getClass)
   private val sse = new CancelableBus[ServerSentEvent]()

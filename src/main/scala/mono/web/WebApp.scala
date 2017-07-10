@@ -10,12 +10,13 @@ import mono.core.article.ArticleOps
 import mono.core.person.PersonOps
 import akka.http.scaladsl.server.Directives._
 import mono.core.alias.AliasOps
+import mono.core.bus.EventBusOps
 import mono.core.env.EnvOps
 import mono.core.image.ImageOps
 
 import scala.language.higherKinds
 
-class WebApp[F[_]](implicit A: ArticleOps[F], Au: PersonOps[F], As: AliasOps[F], Im: ImageOps[F], E: EnvOps[F]) extends Web[F] {
+class WebApp[F[_]](implicit A: ArticleOps[F], Au: PersonOps[F], As: AliasOps[F], Im: ImageOps[F], E: EnvOps[F], Eb: EventBusOps[F]) extends Web[F] {
 
   override def route(implicit i: F ~> Task): Route =
     new WebGraphQL[F].route ~

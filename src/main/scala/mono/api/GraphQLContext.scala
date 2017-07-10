@@ -4,12 +4,15 @@ import cats.free.Free
 import cats.~>
 import monix.cats.MonixToCatsConversions
 import monix.eval.Task
+import monix.reactive.Observable
 import mono.core.alias.{ Alias, AliasOps, AliasPointer }
 import mono.core.article.{ Article, ArticleOps, Articles }
+import mono.core.bus.EventBusOps
 import mono.core.image.{ Image, ImageOps }
 import mono.core.person.{ Person, PersonOps }
 
 import scala.language.higherKinds
+import scala.concurrent.duration._
 
 abstract class GraphQLContext {
   private[api] def currentUserId: Option[Int]
@@ -33,6 +36,8 @@ abstract class GraphQLContext {
   def getAliasById(id: String): Task[Alias]
 
   def getAliases(pointers: Seq[AliasPointer]): Task[Seq[Alias]]
+
+  def trackTelegramAuth(token: String): Observable[String]
 }
 
 object GraphQLContext extends MonixToCatsConversions {
@@ -45,6 +50,7 @@ object GraphQLContext extends MonixToCatsConversions {
     A:  ArticleOps[F],
     I:  ImageOps[F],
     Al: AliasOps[F],
+    Eb: EventBusOps[F],
     i:  F ~> Task
   ): GraphQLContext = new GraphQLContext {
     override private[api] def currentUserId = _currentUserId
@@ -87,5 +93,8 @@ object GraphQLContext extends MonixToCatsConversions {
 
     override def getAliases(pointers: Seq[AliasPointer]): Task[Seq[Alias]] =
       Al.findAliases(pointers: _*).map(_.values.toSeq)
+
+    override def trackTelegramAuth(token: String): Observable[String] =
+      Observable.fromTask(Eb.waitAuth(token))
   }
 }

@@ -10,6 +10,7 @@ import monix.eval.Task
 import monix.execution.Scheduler
 import mono.core.alias.{ AliasDoobieInterpreter, AliasInMemoryInterpreter, AliasOp }
 import mono.core.article.{ ArticleOp, ArticlesDoobieInterpreter, ArticlesInMemoryInterpreter }
+import mono.core.bus.{ EventBusInterpreter, EventBusOp }
 import mono.core.person.{ PersonOp, PersonsDoobieInterpreter, PersonsInMemoryInterpreter }
 import mono.core.env.{ EnvConfigInterpreter, EnvOp }
 import mono.core.image.{ ImageOp, ImagesDoobieInterpreter, ImagesInMemoryInterpreter }
@@ -25,13 +26,16 @@ object Interpret {
 
   type Op2[A] = Coproduct[ImageOp, Op1, A]
 
-  type Op[A] = Coproduct[AliasOp, Op2, A]
+  type Op3[A] = Coproduct[EventBusOp, Op2, A]
+
+  type Op[A] = Coproduct[AliasOp, Op3, A]
 
   lazy val inMemory: Op ~> Task = {
     val i0: Op0 ~> Task = new ArticlesInMemoryInterpreter or new PersonsInMemoryInterpreter
     val i1: Op1 ~> Task = new EnvConfigInterpreter() or i0
     val i2: Op2 ~> Task = new ImagesInMemoryInterpreter or i1
-    new AliasInMemoryInterpreter or i2
+    val i3: Op3 ~> Task = new EventBusInterpreter or i2
+    new AliasInMemoryInterpreter or i3
   }
 
   implicit object taskFS2 extends fs2.util.Catchable[Task] with fs2.util.Suspendable[Task] {
@@ -68,6 +72,7 @@ object Interpret {
     val i0: Op0 ~> Task = new ArticlesDoobieInterpreter(xa) or new PersonsDoobieInterpreter(xa)
     val i1: Op1 ~> Task = new EnvConfigInterpreter() or i0
     val i2: Op2 ~> Task = new ImagesDoobieInterpreter(xa, Paths.get("./images")) or i1
-    new AliasDoobieInterpreter(xa) or i2
+    val i3: Op3 ~> Task = new EventBusInterpreter or i2
+    new AliasDoobieInterpreter(xa) or i3
   }
 }
