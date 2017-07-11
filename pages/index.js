@@ -8,9 +8,10 @@ import TelegramAuthButton from "../components/TelegramAuthButton"
 
 import withData from "../lib/with-data";
 
-const Index = ({ data: { articles: { count, values } } }) => {
+const Index = ({ data: { articles: { count, values }, me } }) => {
+  console.log("me: ", me)
   return (
-    <Page title="Mono(noke) Index">
+    <Page title={"Mono(noke) Index" + me}>
       <h1>
         Articles: {count} | <TelegramAuthButton/>
       </h1>
@@ -54,6 +55,11 @@ const ArticlesQuery = gql`
         }
       }
     }
+      me {
+          person {
+              id
+          }
+      }
   }
 `;
 

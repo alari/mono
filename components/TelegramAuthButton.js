@@ -1,5 +1,7 @@
 import { graphql, withApollo, compose } from "react-apollo";
 import gql from "graphql-tag";
+import cookie from 'cookie'
+import redirect from "../lib/redirect"
 
 const TelegramAuthSubscription = gql`
   subscription TelegramAuth($token: String!) {
@@ -9,12 +11,12 @@ const TelegramAuthSubscription = gql`
   }
 `;
 
-const TelegramAuthButton = ({ mutate, client }) =>
-  <div>
+const TelegramAuthButton = ({mutate,client}) => {
+
+  return (<div>
     <button
       onClick={() =>
-        mutate().then(({ data: { getTelegramLoginToken } }) => {
-        console.log("token = ",getTelegramLoginToken)
+        mutate().then(({data: {getTelegramLoginToken}}) => {
           client
             .subscribe({
               query: TelegramAuthSubscription,
@@ -23,19 +25,26 @@ const TelegramAuthButton = ({ mutate, client }) =>
               }
             })
             .subscribe({
-              next({trackTelegramAuth:{token}}) {
-                // TODO: save token, refetch all queries
-                console.log("got: ", token);
+              next({trackTelegramAuth: {token}}) {
+                console.log("token: ", token)
+                document.cookie = cookie.serialize('token', token, {
+                  maxAge: 30 * 24 * 60 * 60 // 30 days
+                });
+                client.resetStore().then(() => {
+                  // Now redirect to the homepage
+                  redirect({}, '/')
+                })
               },
               error(err) {
-                console.err("err: ", err);
+                console.err("TelegramAuthButton error", err);
               }
             });
         })}
     >
       Auth by Telegram
     </button>
-  </div>;
+  </div>);
+}
 
 export default compose(
   withApollo,
