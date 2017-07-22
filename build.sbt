@@ -31,13 +31,14 @@ val akkaHttpV = "10.0.7"
 val circeV = "0.8.0"
 val doobieV = "0.4.1"
 
+val akkaStreamTest = "com.typesafe.akka" %% "akka-stream-testkit" % akkaV % Test
+val cats = "org.typelevel" %% "cats" % "0.9.0"
+
 val markdown = "com.atlassian.commonmark" % "commonmark" % "0.9.0"
 val logback = "ch.qos.logback" % "logback-classic" % "1.2.2"
 val shapeless = "com.chuusai" %% "shapeless" % "2.3.2"
 val scalatest = "org.scalatest" %% "scalatest" % "3.0.1" % Test
 val icu =  "com.ibm.icu" % "icu4j" % "58.2"
-val akkaStreamTest = "com.typesafe.akka" %% "akka-stream-testkit" % akkaV % Test
-val cats = "org.typelevel" %% "cats" % "0.9.0"
 val scrimage = "com.sksamuel.scrimage" %% "scrimage-core" % "2.1.8"
 
 val sangria = "org.sangria-graphql" %% "sangria" % "1.2.2"

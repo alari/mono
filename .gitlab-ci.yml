@@ -31,7 +31,8 @@ release_front:
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - docker build -t $FRONT_TAG -t $CI_REGISTRY_IMAGE:front-$CI_COMMIT_SHA .
-    - docker push $FRONT_TAG $CI_REGISTRY_IMAGE:front-$CI_COMMIT_SHA
+    - docker push $FRONT_TAG
+    - docker push $CI_REGISTRY_IMAGE:front-$CI_COMMIT_SHA
 
 
 build_scala:
@@ -58,5 +59,6 @@ release_scala:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - cd target/docker/stage
     - docker build -t $BACK_TAG -t $CI_REGISTRY_IMAGE:back-$CI_COMMIT_SHA .
-    - docker push $BACK_TAG $CI_REGISTRY_IMAGE:back-$CI_COMMIT_SHA
+    - docker push $BACK_TAG
+    - docker push $CI_REGISTRY_IMAGE:back-$CI_COMMIT_SHA
 
