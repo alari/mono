@@ -52,7 +52,7 @@ release_scala:
   services:
     - docker:dind
   dependencies:
-    - build_front
+    - build_scala
   tags:
     - docker
   script:
